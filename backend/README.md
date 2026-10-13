@@ -42,6 +42,9 @@ Verificación: `GET http://localhost:3000/api/salud` responde `{ "estado": "ok" 
 | `npm run migrate:create -- <nombre>` | Crea una migración SQL nueva en `migrations/` |
 | `npm run migrate:test` | Aplica las migraciones en la base de pruebas |
 | `npm run seed` | Crea los usuarios de prueba (no se ejecuta en producción) |
+| `npm test` | Aplica migraciones en `sgl_test` y ejecuta las pruebas (Vitest + supertest) |
+
+Las pruebas usan la base `DATABASE_URL_TEST`; nunca tocan los datos de desarrollo.
 
 ## Usuarios de prueba
 
