@@ -1,0 +1,238 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.page-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 19px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: #12977f;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 5px;
+  color: #174448;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.page-description {
+  margin-bottom: 0;
+  color: #708481;
+  font-size: 11px;
+}
+
+.users-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+  margin-bottom: 18px;
+}
+
+.users-panel {
+  overflow: hidden;
+  border: 1px solid #dce8e5;
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgb(22 71 67 / 4%);
+}
+
+.users-filters {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) minmax(125px, 0.4fr);
+  gap: 9px;
+  padding: 13px 14px;
+}
+
+.filter-field input,
+.filter-field select {
+  width: 100%;
+  height: 34px;
+  min-width: 0;
+  padding: 0 10px;
+  border: 1px solid #cadbd7;
+  border-radius: 4px;
+  outline: none;
+  color: #345957;
+  background: #fff;
+  font: inherit;
+  font-size: 10px;
+}
+
+.filter-field input:focus,
+.filter-field select:focus {
+  border-color: #139d88;
+  box-shadow: 0 0 0 3px rgb(19 157 136 / 13%);
+}
+
+.visually-hidden {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.users-table-scroll {
+  overflow-x: auto;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.users-table thead {
+  color: #315c5a;
+  background: #eaf5f2;
+}
+
+.users-table th {
+  height: 35px;
+  padding: 0 9px;
+  border-block: 1px solid #cfe2dd;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.users-table td {
+  height: 39px;
+  padding: 4px 9px;
+  border-bottom: 1px solid #edf2f0;
+  color: #405956;
+  font-size: 9px;
+}
+
+.users-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.driver-name {
+  color: #285b57 !important;
+  font-weight: 700;
+}
+
+.driver-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.empty-row {
+  height: 68px !important;
+  color: #78908d !important;
+  text-align: center;
+}
+
+.users-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-top: 1px solid #edf2f0;
+  color: #718783;
+  font-size: 10px;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.pagination-controls button {
+  min-width: 27px;
+  height: 27px;
+  padding: 0 7px;
+  border: 1px solid #d5e3df;
+  border-radius: 4px;
+  color: #315c5a;
+  background-image: linear-gradient(145deg, #fff 0%, #e7f4ef 100%);
+  box-shadow: inset 0 1px 0 #fff, 0 2px 5px rgb(12 74 68 / 10%);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.pagination-controls button:hover:not(:disabled):not(.current) {
+  background-image: linear-gradient(135deg, #fff 0%, #d1eee5 100%);
+  box-shadow: 0 3px 8px rgb(4 71 67 / 17%), inset 0 1px 0 #fff;
+}
+
+.pagination-controls button.current {
+  border-color: #087f78;
+  color: #fff;
+  background-image: var(--logi-button-highlight), var(--logi-button-gradient);
+  box-shadow: var(--logi-button-shadow);
+}
+
+.pagination-controls button:disabled {
+  color: #a6b7b3;
+  background: linear-gradient(145deg, #f8faf9 0%, #e9efed 100%);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.action-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 14px;
+  padding: 10px 12px;
+  border: 1px solid #c8e7dd;
+  border-radius: 5px;
+  color: #236b5a;
+  background: #f0faf6;
+  font-size: 11px;
+}
+
+.action-message button {
+  border: 0;
+  color: inherit;
+  background: none;
+  font-size: 17px;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .users-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .page-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .users-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .users-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

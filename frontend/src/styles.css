@@ -1,0 +1,36 @@
+:root {
+	--logi-sidebar-gradient: linear-gradient(180deg, #053f45 0%, #07535a 46%, #04a78f 100%);
+	--logi-button-gradient: linear-gradient(135deg, #13a991 0%, #087f78 55%, #05645f 100%);
+	--logi-button-highlight: linear-gradient(135deg, rgb(255 255 255 / 22%), rgb(255 255 255 / 0%) 54%);
+	--logi-button-soft-gradient: linear-gradient(135deg, #f7fffc 0%, #dcefe9 100%);
+	--logi-button-danger-gradient: linear-gradient(135deg, #d96b64 0%, #b84343 58%, #8d3037 100%);
+	--logi-button-shadow: 0 3px 8px rgb(4 71 67 / 22%), inset 0 1px 0 rgb(255 255 255 / 30%), inset 0 -1px 0 rgb(0 42 44 / 18%);
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html {
+	min-width: 320px;
+	min-height: 100%;
+	background: #f4f8f7;
+}
+
+body {
+	min-width: 320px;
+	min-height: 100vh;
+	margin: 0;
+	font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+	-webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select {
+	font: inherit;
+}
+
+button {
+	transition: color 160ms ease, background-color 160ms ease, background-image 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}

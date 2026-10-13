@@ -1,0 +1,151 @@
+<div class="app-shell">
+  <aside class="sidebar" aria-label="Navegación principal">
+    <button class="brand" type="button" aria-label="Ir al dashboard" (click)="setPage('dashboard')">
+      <span class="brand-mark" aria-hidden="true">L</span>
+      <span>LogiTrack</span>
+    </button>
+
+    <nav class="sidebar-nav" aria-label="Secciones">
+      <button class="nav-link" type="button" [class.active]="activePage() === 'dashboard'" [attr.aria-current]="activePage() === 'dashboard' ? 'page' : null" (click)="setPage('dashboard')"><span class="nav-icon" aria-hidden="true"></span>Dashboard</button>
+      <button class="nav-link" type="button" [class.active]="activePage() === 'viajes'" [attr.aria-current]="activePage() === 'viajes' ? 'page' : null" (click)="setPage('viajes')"><span class="nav-icon" aria-hidden="true"></span>Viajes</button>
+      <button class="nav-link" type="button" [class.active]="activePage() === 'historial'" [attr.aria-current]="activePage() === 'historial' ? 'page' : null" (click)="setPage('historial')"><span class="nav-icon" aria-hidden="true"></span>Historial</button>
+      <span class="nav-divider" aria-hidden="true"></span>
+      <button class="nav-link" type="button" [class.active]="activePage() === 'flota'" [attr.aria-current]="activePage() === 'flota' ? 'page' : null" (click)="setPage('flota')"><span class="nav-icon" aria-hidden="true"></span>Flota</button>
+      <button class="nav-link" type="button" [class.active]="activePage() === 'usuarios'" [attr.aria-current]="activePage() === 'usuarios' ? 'page' : null" (click)="setPage('usuarios')"><span class="nav-icon" aria-hidden="true"></span>Usuarios</button>
+    </nav>
+    <div class="sidebar-footer">OPERACIONES <span>•</span> COLOMBIA</div>
+  </aside>
+
+  <div class="workspace">
+    <header class="topbar">
+      <div class="breadcrumb">Operaciones <span>/</span> {{ pageTitle() }}</div>
+      <div class="profile-area">
+        <span class="profile-name">{{ profileName() }}</span>
+        <button class="profile-button" type="button" aria-label="Perfil">{{ activePage() === 'historial' ? 'CM' : 'AR' }}</button>
+        <button class="menu-button" type="button" aria-label="Abrir menú">⋮</button>
+      </div>
+    </header>
+
+    <main class="page-content">
+      @switch (activePage()) {
+        @case ('dashboard') {
+          <app-dashboard-page />
+        }
+        @case ('historial') {
+          <app-history-page />
+        }
+        @case ('flota') {
+          <app-fleet-page />
+        }
+        @case ('usuarios') {
+          <app-users-page />
+        }
+        @default {
+      <section class="page-heading" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">CENTRO DE OPERACIONES</p>
+          <h1 id="page-title">Gestión de Viajes</h1>
+          <p class="page-description">Administra todos los viajes del sistema</p>
+        </div>
+        <span class="updated-at"><span class="online-dot"></span> Sistema actualizado</span>
+      </section>
+
+      <section class="summary-grid" aria-label="Resumen de viajes">
+        @for (metric of summary; track metric.title) {
+          <app-card [title]="metric.title" [value]="metric.value" [detail]="metric.detail" />
+        }
+      </section>
+
+      <section class="trips-panel" aria-labelledby="trips-heading">
+        <div class="panel-heading">
+          <div>
+            <h2 id="trips-heading">Viajes registrados</h2>
+            <p>Consulta y administra los desplazamientos recientes</p>
+          </div>
+          <span class="result-count">{{ filteredTrips().length }} resultados</span>
+        </div>
+
+        <div class="filters" aria-label="Filtros de viajes">
+          <label class="filter-field search-field">
+            <span>Buscar</span>
+            <span class="input-wrap search-wrap">
+              <span class="search-icon" aria-hidden="true"></span>
+              <input type="search" placeholder="Buscar por ID, placa o ruta..." (input)="onSearchInput($event)" />
+            </span>
+          </label>
+          <label class="filter-field">
+            <span>Estado</span>
+            <select (change)="onStatusChange($event)">
+              <option>Todos los estados</option>
+              <option>Pendiente</option>
+              <option>Completado</option>
+              <option>En revisión</option>
+            </select>
+          </label>
+          <label class="filter-field">
+            <span>Conductor</span>
+            <select (change)="onDriverChange($event)">
+              <option>Todos los conductores</option>
+              @for (driver of drivers; track driver) {
+                <option [value]="driver">{{ driver }}</option>
+              }
+            </select>
+          </label>
+          <label class="filter-field date-field">
+            <span>Rango de fechas</span>
+            <input type="date" aria-label="Filtrar por fecha" (change)="onDateChange($event)" />
+          </label>
+        </div>
+
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">ID</th>
+                <th scope="col">Conductor</th>
+                <th scope="col">Origen / Destino</th>
+                <th scope="col">Fecha</th>
+                <th scope="col">Monto</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (trip of filteredTrips(); track trip.id) {
+                <tr class="trip-row">
+                  <td class="trip-id">{{ trip.id }}</td>
+                  <td>{{ trip.driver }}</td>
+                  <td>{{ trip.origin }} <span class="route-arrow">→</span> {{ trip.destination }}</td>
+                  <td class="date-cell">{{ trip.date }}</td>
+                  <td class="amount-cell">{{ trip.amount }}</td>
+                  <td><app-badge [label]="trip.status" [variant]="badgeVariant(trip.status)" /></td>
+                  <td class="action-cell">
+                    <app-button label="Ver detalle" variant="primary" (btnClick)="showDetails(trip)" />
+                    @if (trip.status !== 'Completado') {
+                      <app-button label="Auditar" variant="quiet" (btnClick)="auditTrip(trip)" />
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td class="empty-state" colspan="7">No hay viajes que coincidan con estos filtros.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (actionMessage()) {
+          <div class="action-message" role="status">
+            <span>{{ actionMessage() }}</span>
+            <button type="button" aria-label="Cerrar mensaje" (click)="actionMessage.set('')">×</button>
+          </div>
+        }
+      </section>
+
+      <footer class="page-footer">LogiTrack <span>·</span> Panel de administración <span>·</span> 2026</footer>
+        }
+      }
+    </main>
+  </div>
+</div>

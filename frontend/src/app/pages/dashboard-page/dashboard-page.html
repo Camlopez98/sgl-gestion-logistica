@@ -1,0 +1,87 @@
+<section class="page-heading" aria-labelledby="dashboard-title">
+  <div>
+    <p class="eyebrow">CENTRO DE OPERACIONES</p>
+    <h1 id="dashboard-title">Dashboard</h1>
+    <p class="page-description">Resumen general de operaciones</p>
+  </div>
+  <label class="dashboard-search">
+    <span class="search-icon" aria-hidden="true"></span>
+    <input type="search" placeholder="Buscar viajes, conductores..." aria-label="Buscar viajes o conductores" />
+  </label>
+</section>
+
+<section class="dashboard-overview" aria-label="Indicadores e ingresos mensuales">
+  <div class="metric-stack">
+    @for (metric of metrics; track metric.title) {
+      <app-card [title]="metric.title" [value]="metric.value" [detail]="metric.detail" />
+    }
+  </div>
+
+  <section class="chart-panel" aria-labelledby="income-title">
+    <div class="section-title-row">
+      <div>
+        <h2 id="income-title">Ingresos Mensuales</h2>
+        <p>Valores en miles de pesos</p>
+      </div>
+      <span class="chart-period">2026</span>
+    </div>
+    <div class="chart" role="img" aria-label="Ingresos mensuales: julio 50, agosto 80, septiembre 85, octubre 60, noviembre 115 y diciembre 150 mil pesos">
+      @for (month of months; track month.name) {
+        <div class="chart-column">
+          <span class="chart-value">${{ month.amount }}</span>
+          <div class="bar-track"><span class="bar-fill" [style.height.%]="month.amount / 150 * 100"></span></div>
+          <span class="month-label">{{ month.name }}</span>
+        </div>
+      }
+    </div>
+  </section>
+</section>
+
+<section class="review-section" aria-labelledby="review-title">
+  <div class="review-heading">
+    <div>
+      <h2 id="review-title">Viajes Pendientes de Revisión</h2>
+      <p>Requieren auditoría administrativa</p>
+    </div>
+    <span class="review-total">{{ trips().length }} pendientes</span>
+  </div>
+
+  <div class="dashboard-table-scroll">
+    <table class="dashboard-table">
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Conductor</th>
+          <th scope="col">Fecha</th>
+          <th scope="col">Monto</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (trip of trips(); track trip.id) {
+          <tr>
+            <td class="trip-id">{{ trip.id }}</td>
+            <td>{{ trip.driver }}</td>
+            <td>{{ trip.date }}</td>
+            <td class="amount-cell">{{ trip.amount }}</td>
+            <td><app-badge [label]="trip.status" [variant]="trip.status === 'Pendiente' ? 'pending' : 'review'" /></td>
+            <td class="row-actions">
+              <app-button label="Auditar" variant="quiet" (btnClick)="auditTrip(trip)" />
+              <app-button label="Finalizar viaje" variant="primary" (btnClick)="completeTrip(trip)" />
+            </td>
+          </tr>
+        } @empty {
+          <tr><td class="empty-row" colspan="6">No hay viajes pendientes de revisión.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (actionMessage()) {
+    <div class="action-message" role="status">
+      <span>{{ actionMessage() }}</span>
+      <button type="button" aria-label="Cerrar mensaje" (click)="actionMessage.set('')">×</button>
+    </div>
+  }
+</section>

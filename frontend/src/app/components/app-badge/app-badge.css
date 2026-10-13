@@ -1,0 +1,48 @@
+.status-badge {
+	display: inline-flex;
+	min-height: 21px;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 7px;
+	border-radius: 20px;
+	font-size: 9px;
+	line-height: 1;
+}
+
+.status-dot {
+	width: 6px;
+	height: 6px;
+	flex: 0 0 6px;
+	border-radius: 50%;
+	background: currentColor;
+}
+
+.pending {
+	color: #7a6410;
+	background: #fff5cd;
+}
+
+.completed {
+	color: #187354;
+	background: #dff4e9;
+}
+
+.review {
+	color: #8b5424;
+	background: #fff0dd;
+}
+
+.active {
+	color: #187354;
+	background: #dff4e9;
+}
+
+.inactive {
+	color: #64736f;
+	background: #edf1ef;
+}
+
+.maintenance {
+	color: #77630e;
+	background: #fff5cd;
+}

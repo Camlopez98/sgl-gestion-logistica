@@ -1,0 +1,3 @@
+<span class="status-badge" [class.pending]="variant() === 'pending'" [class.completed]="variant() === 'completed'" [class.review]="variant() === 'review'" [class.active]="variant() === 'active'" [class.inactive]="variant() === 'inactive'" [class.maintenance]="variant() === 'maintenance'">
+	<span class="status-dot" aria-hidden="true"></span>{{ label() }}
+</span>

@@ -1,0 +1,134 @@
+<section class="page-heading" aria-labelledby="fleet-title">
+  <div>
+    <p class="eyebrow">RECURSOS DE OPERACIÓN</p>
+    <h1 id="fleet-title">Gestión de Flota</h1>
+    <p class="page-description">Control y mantenimiento de vehículos</p>
+  </div>
+  <app-button label="+ Registrar Vehículo" variant="primary" (btnClick)="registerVehicle()" />
+</section>
+
+<section class="fleet-summary" aria-label="Resumen de flota">
+  @for (metric of metrics(); track metric.title) {
+    <app-card [title]="metric.title" [value]="metric.value" [detail]="metric.detail" />
+  }
+</section>
+
+<section class="fleet-panel" aria-labelledby="inventory-title">
+  <div class="fleet-panel-heading">
+    <h2 id="inventory-title">Inventario de Flota</h2>
+    <span>{{ filteredVehicles().length }} vehículos</span>
+  </div>
+
+  <div class="fleet-filters" aria-label="Filtros de flota">
+    <label class="filter-field">
+      <span class="visually-hidden">Buscar vehículos</span>
+      <input type="search" placeholder="Buscar vehículos, placas, conductores..." (input)="onSearchInput($event)" />
+    </label>
+    <label class="filter-field status-filter">
+      <span class="visually-hidden">Filtrar por estado</span>
+      <select (change)="onStatusChange($event)">
+        <option>Todos</option>
+        <option>Activo</option>
+        <option>En Mantenimiento</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="fleet-table-scroll">
+    <table class="fleet-table">
+      <thead>
+        <tr>
+          <th scope="col">Placa</th>
+          <th scope="col">Marca/Modelo</th>
+          <th scope="col">Año</th>
+          <th scope="col">Conductor Asignado</th>
+          <th scope="col">Km Recorridos</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Próximo Mantenimiento</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (vehicle of pagedVehicles(); track vehicle.plate) {
+          <tr>
+            <td class="plate-cell">{{ vehicle.plate }}</td>
+            <td>{{ vehicle.model }}</td>
+            <td>{{ vehicle.year }}</td>
+            <td>{{ vehicle.driver }}</td>
+            <td>{{ vehicle.kilometers }}</td>
+            <td><app-badge [label]="vehicle.status" [variant]="vehicleStatusVariant(vehicle.status)" /></td>
+            <td>{{ vehicle.maintenance }}</td>
+          </tr>
+        } @empty {
+          <tr><td class="empty-row" colspan="7">No hay vehículos que coincidan con estos filtros.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="fleet-pagination">
+    <span>Mostrando {{ firstVisible() }}-{{ lastVisible() }} de {{ filteredVehicles().length }} vehículos</span>
+    <nav class="pagination-controls" aria-label="Paginación de flota">
+      <button type="button" aria-label="Página anterior" [disabled]="currentPage() === 1" (click)="changePage(currentPage() - 1)">‹</button>
+      @for (page of pageNumbers(); track page) {
+        <button type="button" [class.current]="currentPage() === page" [attr.aria-current]="currentPage() === page ? 'page' : null" [attr.aria-label]="'Página ' + page" (click)="changePage(page)">{{ page }}</button>
+      }
+      <button type="button" aria-label="Página siguiente" [disabled]="currentPage() === pageCount()" (click)="changePage(currentPage() + 1)">›</button>
+    </nav>
+  </footer>
+
+  @if (actionMessage()) {
+    <div class="action-message" role="status">
+      <span>{{ actionMessage() }}</span>
+      <button type="button" aria-label="Cerrar mensaje" (click)="actionMessage.set('')">×</button>
+    </div>
+  }
+</section>
+
+@if (showForm()) {
+  <div class="dialog-backdrop" (click)="closeForm()">
+    <section class="vehicle-dialog" role="dialog" aria-modal="true" aria-labelledby="vehicle-dialog-title" (click)="$event.stopPropagation()">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">INVENTARIO DE FLOTA</p>
+          <h2 id="vehicle-dialog-title">Registrar vehículo</h2>
+        </div>
+        <button class="dialog-close" type="button" aria-label="Cerrar formulario" (click)="closeForm()">×</button>
+      </div>
+      <form (submit)="saveVehicle($event)">
+        <div class="dialog-grid">
+          <label class="dialog-field">
+            <span>Placa</span>
+            <input type="text" [value]="formPlate()" (input)="updateFormField('plate', $event)" required />
+          </label>
+          <label class="dialog-field">
+            <span>Marca / Modelo</span>
+            <input type="text" [value]="formModel()" (input)="updateFormField('model', $event)" required />
+          </label>
+          <label class="dialog-field">
+            <span>Año</span>
+            <input type="number" min="1980" max="2035" [value]="formYear()" (input)="updateFormField('year', $event)" required />
+          </label>
+          <label class="dialog-field">
+            <span>Conductor asignado</span>
+            <input type="text" [value]="formDriver()" (input)="updateFormField('driver', $event)" placeholder="Sin asignar" />
+          </label>
+          <label class="dialog-field">
+            <span>Kilómetros recorridos</span>
+            <input type="number" min="0" [value]="formKilometers()" (input)="updateFormField('kilometers', $event)" placeholder="0" />
+          </label>
+          <label class="dialog-field">
+            <span>Próximo mantenimiento</span>
+            <input type="text" [value]="formMaintenance()" (input)="updateFormField('maintenance', $event)" placeholder="Por programar" />
+          </label>
+        </div>
+        @if (formError()) {
+          <p class="form-error" role="alert">{{ formError() }}</p>
+        }
+        <div class="dialog-actions">
+          <button class="cancel-button" type="button" (click)="closeForm()">Cancelar</button>
+          <button class="save-button" type="submit">Registrar vehículo</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}

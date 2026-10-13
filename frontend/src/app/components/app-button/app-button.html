@@ -1,0 +1,9 @@
+<button
+	class="custom-btn"
+	type="button"
+	[class.primary]="variant() === 'primary'"
+	[class.danger]="variant() === 'danger'"
+	[class.success]="variant() === 'success'"
+	[class.quiet]="variant() === 'quiet'"
+	(click)="btnClick.emit()"
+>{{ label() }}</button>

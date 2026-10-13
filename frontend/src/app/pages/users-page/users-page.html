@@ -1,0 +1,120 @@
+<section class="page-heading" aria-labelledby="users-title">
+  <div>
+    <p class="eyebrow">ADMINISTRACIÓN DE PERSONAL</p>
+    <h1 id="users-title">Gestión de Conductores</h1>
+    <p class="page-description">Añade o elimina conductores de la flota activa</p>
+  </div>
+  <app-button label="+ Añadir Conductor" variant="primary" (btnClick)="openNewDriverForm()" />
+</section>
+
+<section class="users-summary" aria-label="Resumen de conductores">
+  @for (metric of metrics(); track metric.title) {
+    <app-card [title]="metric.title" [value]="metric.value" [detail]="metric.detail" />
+  }
+</section>
+
+<section class="users-panel" aria-label="Conductores registrados">
+  <div class="users-filters" aria-label="Filtros de conductores">
+    <label class="filter-field search-field">
+      <span class="visually-hidden">Buscar conductores</span>
+      <input type="search" placeholder="Buscar por nombre, cédula..." (input)="onSearchInput($event)" />
+    </label>
+    <label class="filter-field status-filter">
+      <span class="visually-hidden">Filtrar por estado</span>
+      <select (change)="onStatusChange($event)">
+        <option>Todos</option>
+        <option>Activo</option>
+        <option>Inactivo</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="users-table-scroll">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th scope="col">Nombre</th>
+          <th scope="col">Cédula</th>
+          <th scope="col">Teléfono</th>
+          <th scope="col">Vehículo</th>
+          <th scope="col">Estado</th>
+          <th scope="col">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (driver of pagedDrivers(); track driver.id) {
+          <tr>
+            <td class="driver-name">{{ driver.name }}</td>
+            <td>{{ driver.identity }}</td>
+            <td>{{ driver.phone }}</td>
+            <td>{{ driver.vehicle }}</td>
+            <td><app-badge [label]="driver.status" [variant]="driver.status === 'Activo' ? 'active' : 'inactive'" /></td>
+            <td class="driver-actions">
+              <app-button label="Editar" variant="quiet" (btnClick)="editDriver(driver)" />
+              <app-button label="Eliminar" variant="danger" (btnClick)="deleteDriver(driver)" />
+            </td>
+          </tr>
+        } @empty {
+          <tr><td class="empty-row" colspan="6">No hay conductores que coincidan con estos filtros.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="users-pagination">
+    <span>Mostrando {{ firstVisible() }}-{{ lastVisible() }} de {{ filteredDrivers().length }} conductores</span>
+    <nav class="pagination-controls" aria-label="Paginación de conductores">
+      <button type="button" [disabled]="currentPage() === 1" (click)="changePage(currentPage() - 1)">Anterior</button>
+      @for (page of pageNumbers(); track page) {
+        <button type="button" [class.current]="currentPage() === page" [attr.aria-current]="currentPage() === page ? 'page' : null" [attr.aria-label]="'Página ' + page" (click)="changePage(page)">{{ page }}</button>
+      }
+      <button type="button" [disabled]="currentPage() === pageCount()" (click)="changePage(currentPage() + 1)">Siguiente</button>
+    </nav>
+  </footer>
+
+  @if (actionMessage()) {
+    <div class="action-message" role="status">
+      <span>{{ actionMessage() }}</span>
+      <button type="button" aria-label="Cerrar mensaje" (click)="actionMessage.set('')">×</button>
+    </div>
+  }
+</section>
+
+@if (showForm()) {
+  <div class="dialog-backdrop" (click)="closeForm()">
+    <section class="driver-dialog" role="dialog" aria-modal="true" aria-labelledby="driver-dialog-title" (click)="$event.stopPropagation()">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">CONDUCTORES</p>
+          <h2 id="driver-dialog-title">{{ editingId() === null ? 'Añadir conductor' : 'Editar conductor' }}</h2>
+        </div>
+        <button class="dialog-close" type="button" aria-label="Cerrar formulario" (click)="closeForm()">×</button>
+      </div>
+      <form (submit)="saveDriver($event)">
+        <label class="dialog-field">
+          <span>Nombre completo</span>
+          <input type="text" autocomplete="name" [value]="formName()" (input)="updateFormField('name', $event)" required />
+        </label>
+        <label class="dialog-field">
+          <span>Cédula</span>
+          <input type="text" [value]="formIdentity()" (input)="updateFormField('identity', $event)" required />
+        </label>
+        <label class="dialog-field">
+          <span>Teléfono</span>
+          <input type="tel" autocomplete="tel" [value]="formPhone()" (input)="updateFormField('phone', $event)" required />
+        </label>
+        <label class="dialog-field">
+          <span>Vehículo asignado</span>
+          <input type="text" [value]="formVehicle()" (input)="updateFormField('vehicle', $event)" placeholder="Sin asignar" />
+        </label>
+        @if (formError()) {
+          <p class="form-error" role="alert">{{ formError() }}</p>
+        }
+        <div class="dialog-actions">
+          <button class="cancel-button" type="button" (click)="closeForm()">Cancelar</button>
+          <button class="save-button" type="submit">{{ editingId() === null ? 'Añadir conductor' : 'Guardar cambios' }}</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}

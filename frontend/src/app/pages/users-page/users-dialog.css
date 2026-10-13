@@ -1,0 +1,119 @@
+.dialog-backdrop {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(5 39 41 / 55%);
+}
+
+.driver-dialog {
+  width: min(100%, 460px);
+  max-height: min(90vh, 700px);
+  overflow-y: auto;
+  padding: 23px;
+  border: 1px solid #dce8e5;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 18px 55px rgb(5 39 41 / 22%);
+}
+
+.dialog-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 18px;
+}
+
+.dialog-heading .eyebrow {
+  margin-bottom: 5px;
+}
+
+.dialog-heading h2 {
+  margin-bottom: 0;
+  color: #174448;
+  font-size: 19px;
+}
+
+.dialog-close {
+  width: 31px;
+  height: 31px;
+  border: 1px solid #dce8e5;
+  border-radius: 5px;
+  color: #55706e;
+  background: linear-gradient(145deg, #fff 0%, #e7f4ef 100%);
+  box-shadow: inset 0 1px 0 #fff, 0 2px 5px rgb(12 74 68 / 10%);
+  font-size: 19px;
+  cursor: pointer;
+}
+
+.dialog-field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 13px;
+  color: #506b68;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dialog-field input {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #cadbd7;
+  border-radius: 4px;
+  outline: none;
+  color: #345957;
+  font: inherit;
+  font-size: 12px;
+}
+
+.dialog-field input:focus {
+  border-color: #139d88;
+  box-shadow: 0 0 0 3px rgb(19 157 136 / 13%);
+}
+
+.form-error {
+  margin: 2px 0 12px;
+  color: #a33434;
+  font-size: 11px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 19px;
+}
+
+.dialog-actions button {
+  min-height: 36px;
+  padding: 0 13px;
+  border-radius: 4px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cancel-button {
+  border: 1px solid #ccdcd8;
+  color: #466663;
+  background-image: linear-gradient(145deg, #fff 0%, #e7f4ef 100%);
+  box-shadow: inset 0 1px 0 #fff, 0 2px 5px rgb(12 74 68 / 10%);
+}
+
+.save-button {
+  border: 1px solid #087f78;
+  color: #fff;
+  background-image: var(--logi-button-highlight), var(--logi-button-gradient);
+  box-shadow: var(--logi-button-shadow);
+}
+
+.dialog-actions button:hover,
+.dialog-close:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}

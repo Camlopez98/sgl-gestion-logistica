@@ -1,0 +1,17 @@
+# Dependencias
+node_modules/
+venv/
+__pycache__/
+
+# Compilados y cache
+dist/
+build/
+.angular/
+
+# Variables de entorno
+.env
+
+# Editor y sistema operativo
+.idea/
+.DS_Store
+Thumbs.db
