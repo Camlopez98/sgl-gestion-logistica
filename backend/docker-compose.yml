@@ -1,0 +1,17 @@
+# PostgreSQL local para desarrollo. Uso: docker compose up -d
+services:
+  postgres:
+    image: postgres:16
+    container_name: sgl-postgres
+    environment:
+      POSTGRES_USER: sgl
+      POSTGRES_PASSWORD: sgl
+      POSTGRES_DB: sgl
+    ports:
+      - "5432:5432"
+    volumes:
+      - sgl-postgres-data:/var/lib/postgresql/data
+      - ./docker/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+
+volumes:
+  sgl-postgres-data:
