@@ -23,6 +23,7 @@ docker compose up -d
 #   CREATE DATABASE sgl_test OWNER sgl;
 
 npm run migrate:up        # crea las tablas
+npm run seed              # crea los usuarios de prueba
 npm run dev               # http://localhost:3000/api
 ```
 
@@ -40,6 +41,18 @@ Verificación: `GET http://localhost:3000/api/salud` responde `{ "estado": "ok" 
 | `npm run migrate:down` | Revierte la última migración |
 | `npm run migrate:create -- <nombre>` | Crea una migración SQL nueva en `migrations/` |
 | `npm run migrate:test` | Aplica las migraciones en la base de pruebas |
+| `npm run seed` | Crea los usuarios de prueba (no se ejecuta en producción) |
+
+## Usuarios de prueba
+
+Todos tienen la contraseña `Sgl2026*`. Solo existen en desarrollo.
+
+| Email | Rol | Estado |
+|---|---|---|
+| `admin@sgl.test` | ADMINISTRADOR | activo |
+| `conductor@sgl.test` | CONDUCTOR | activo |
+| `contador@sgl.test` | CONTADOR | activo |
+| `inactivo@sgl.test` | CONDUCTOR | inactivo (para probar el rechazo de cuentas inactivas) |
 
 ## Migraciones
 
