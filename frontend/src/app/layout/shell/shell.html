@@ -1,0 +1,31 @@
+<div class="app-shell">
+  <aside class="sidebar" aria-label="Navegación principal">
+    <a class="brand" routerLink="/" aria-label="Ir al inicio">
+      <span class="brand-mark" aria-hidden="true">L</span>
+      <span>LogiTrack</span>
+    </a>
+
+    <nav class="sidebar-nav" aria-label="Secciones">
+      @for (entrada of menu(); track entrada.ruta) {
+        @if (entrada.separadorAntes) {
+          <span class="nav-divider" aria-hidden="true"></span>
+        }
+        <a class="nav-link" [routerLink]="entrada.ruta" routerLinkActive="active" ariaCurrentWhenActive="page">
+          <span class="nav-icon" aria-hidden="true"></span>{{ entrada.etiqueta }}
+        </a>
+      }
+    </nav>
+    <div class="sidebar-footer">OPERACIONES <span>•</span> COLOMBIA</div>
+  </aside>
+
+  <div class="workspace">
+    <header class="topbar">
+      <div class="breadcrumb">Operaciones <span>/</span> {{ titulo() }}</div>
+      <div class="profile-area"></div>
+    </header>
+
+    <main class="page-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>
