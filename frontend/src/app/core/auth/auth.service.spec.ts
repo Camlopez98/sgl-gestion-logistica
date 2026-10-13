@@ -67,9 +67,21 @@ describe('AuthService', () => {
     expect(auth.usuario()).toEqual(conductor);
   });
 
-  it('descarta una sesión guardada cuyo token ya expiró', () => {
+  it('reconoce una sesión guardada cuyo token ya expiró y permite descartarla', () => {
     sessionStorage.setItem('sgl.token', tokenDePrueba(-10));
     sessionStorage.setItem('sgl.usuario', JSON.stringify(conductor));
+    const { auth } = configurar();
+
+    expect(auth.estaAutenticado()).toBe(false);
+    expect(auth.sesionExpirada()).toBe(true);
+
+    auth.descartarSesion();
+    expect(auth.sesionExpirada()).toBe(false);
+    expect(sessionStorage.getItem('sgl.token')).toBeNull();
+  });
+
+  it('descarta datos de sesión incompletos', () => {
+    sessionStorage.setItem('sgl.token', 'no-es-un-jwt');
     const { auth } = configurar();
 
     expect(auth.estaAutenticado()).toBe(false);

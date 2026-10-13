@@ -32,8 +32,10 @@ export class AuthService {
   constructor() {
     if (this.estaAutenticado()) {
       this.programarExpiracion();
-    } else {
-      this.limpiarSesion();
+    } else if (!this.sesionExpirada()) {
+      // Datos incompletos o corruptos. Una sesión expirada se conserva hasta que
+      // authGuard la descarte, para poder avisar al usuario que su sesión expiró.
+      this.descartarSesion();
     }
   }
 
@@ -81,8 +83,14 @@ export class AuthService {
         .pipe(catchError(() => EMPTY))
         .subscribe();
     }
-    this.limpiarSesion();
+    this.descartarSesion();
     void this.router.navigate(['/login'], { queryParams: { motivo }, replaceUrl: true });
+  }
+
+  /** Hay datos de una sesión anterior cuyo token ya expiró. */
+  sesionExpirada(): boolean {
+    const token = this.tokenActual();
+    return !!token && !!this.usuarioActual() && tokenExpirado(token);
   }
 
   private guardarSesion(token: string, usuario: UsuarioSesion): void {
@@ -93,7 +101,8 @@ export class AuthService {
     this.programarExpiracion();
   }
 
-  private limpiarSesion(): void {
+  /** Borra los datos de la sesión sin navegar (los guards deciden a dónde ir). */
+  descartarSesion(): void {
     clearTimeout(this.temporizadorExpiracion);
     borrar(CLAVE_TOKEN);
     borrar(CLAVE_USUARIO);

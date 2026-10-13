@@ -27,7 +27,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   const auth = inject(AuthService);
   const router = inject(Router);
-  const token = auth.token();
+  const token = auth.estaAutenticado() ? auth.token() : null;
   const peticion = token ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
   const esPeticionDeSesion = /\/auth\/(login|logout)$/.test(req.url);
 

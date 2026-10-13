@@ -21,7 +21,11 @@
   <div class="workspace">
     <header class="topbar">
       <div class="breadcrumb">Operaciones <span>/</span> {{ titulo() }}</div>
-      <div class="profile-area"></div>
+      <div class="profile-area">
+        <span class="profile-name">{{ usuario()?.nombreCompleto }}</span>
+        <span class="profile-button" aria-hidden="true">{{ iniciales() }}</span>
+        <button class="logout-button" type="button" (click)="cerrarSesion()">Cerrar sesión</button>
+      </div>
     </header>
 
     <main class="page-content">

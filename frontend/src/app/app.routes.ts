@@ -1,5 +1,8 @@
+import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
+import { authGuard, invitadoGuard, rolGuard } from './core/auth/auth.guards';
 import type { DatosRuta } from './core/auth/auth.models';
+import { AuthService } from './core/auth/auth.service';
 import { AppShell } from './layout/shell/shell';
 import { AppDashboardPage } from './pages/dashboard-page/dashboard-page';
 import { AppDriverTripsPage } from './pages/driver-trips-page/driver-trips-page';
@@ -30,11 +33,17 @@ export const rutasInternas: Routes = [
 ];
 
 export const routes: Routes = [
-  { path: 'login', component: AppLoginPage, title: 'LogiTrack | Iniciar sesión' },
+  { path: 'login', component: AppLoginPage, canActivate: [invitadoGuard], title: 'LogiTrack | Iniciar sesión' },
   {
     path: '',
     component: AppShell,
-    children: [{ path: '', pathMatch: 'full', redirectTo: 'admin/dashboard' }, ...rutasInternas],
+    canActivate: [authGuard],
+    canActivateChild: [authGuard, rolGuard],
+    children: [
+      // La raíz lleva al módulo del rol de la sesión.
+      { path: '', pathMatch: 'full', redirectTo: () => inject(AuthService).rutaInicio() },
+      ...rutasInternas,
+    ],
   },
   { path: '**', redirectTo: '' },
 ];
