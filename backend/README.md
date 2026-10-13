@@ -75,14 +75,17 @@ src/
 ├── routes/index.ts  punto único de registro de módulos
 ├── modules/
 │   ├── auth/        HU-18: login, logout, me, bitácora, hash de contraseñas
-│   └── usuarios/    repositorio de usuarios (reutilizable)
+│   ├── usuarios/    repositorio de usuarios (reutilizable)
+│   └── vehiculos/   HU-03: registro, consulta, edición y desactivación de vehículos
 └── shared/
     ├── errors/app-error.ts            AppError(status, codigo, mensaje)
+    ├── idempotencia/                  registro de solicitudes con Idempotency-Key
     ├── seguridad/token.ts             firma y verificación de JWT
     ├── types/                         Rol y tipado de req.usuario
     └── middlewares/
         ├── autenticar.ts              exige JWT válido y usuario activo
         ├── autorizar.ts               restringe por rol (RBAC)
+        ├── idempotente.ts             reintentos sin duplicar (Idempotency-Key)
         ├── manejador-errores.ts       traduce todo error a { codigo, mensaje }
         ├── no-encontrado.ts           404 común
         └── validar.ts                 validación con zod (422)
@@ -122,6 +125,35 @@ Cada módulo sigue las mismas capas:
 - La sesión dura `JWT_EXPIRA_EN` segundos (30 min por defecto) **desde la última actividad**: cuando al token le queda menos de la mitad de su vida, la API devuelve uno nuevo en el encabezado `X-Token-Renovado` y el frontend lo reemplaza.
 - Errores de `autenticar` (401): `TOKEN_AUSENTE`, `TOKEN_INVALIDO`, `SESION_EXPIRADA`, `CUENTA_INACTIVA`.
 - Error de `autorizar` (403): `ACCESO_DENEGADO`.
+
+## Vehículos (HU-03)
+
+Solo el Administrador accede a estos endpoints.
+
+| Método | Endpoint | Respuestas |
+|---|---|---|
+| POST | `/api/vehiculos` | 201 · 409 `PLACA_DUPLICADA` · 422 `PLACA_FORMATO_INVALIDO` / `DATOS_INVALIDOS` |
+| GET | `/api/vehiculos?estado=&tipo=&q=` | 200 (incluye inactivos salvo que se filtre) |
+| GET | `/api/vehiculos/{id}` | 200 · 404 `VEHICULO_NO_ENCONTRADO` |
+| PUT | `/api/vehiculos/{id}` | 200 · 404 · 409 `PLACA_DUPLICADA` · 422 |
+| PATCH | `/api/vehiculos/{id}/desactivar` | 200 · 404 · 409 `VEHICULO_EN_VIAJE_ACTIVO` |
+
+- La placa se normaliza (mayúsculas, sin espacios ni guiones) y debe cumplir el formato de su tipo:
+  FURGON, CAMION y TRACTOCAMION `AAA999`; REMOLQUE `R99999`; SEMIRREMOLQUE `S99999`.
+- Los vehículos no se eliminan: se desactivan y permanecen en el histórico.
+- La verificación de viaje activo se conecta con `registrarConsultaViajeActivo()`
+  (`src/modules/vehiculos/viajes-activos.ts`) cuando exista el módulo de viajes.
+
+## Reintentos sin duplicados (Idempotency-Key)
+
+Las operaciones de creación con el middleware `idempotente()` aceptan el encabezado `Idempotency-Key`
+(una clave única por operación, por ejemplo un UUID generado al abrir el formulario):
+
+- Un reintento con la misma clave y los mismos datos devuelve la respuesta original
+  (encabezado `Idempotent-Replayed: true`) sin repetir la operación.
+- La misma clave con otros datos responde 422 `CLAVE_IDEMPOTENCIA_REUTILIZADA`.
+- Mientras la solicitud original se procesa, responde 409 `SOLICITUD_EN_PROCESO`.
+- Las respuestas 5xx no se guardan: el reintento se procesa de nuevo.
 
 ## Formato de error
 

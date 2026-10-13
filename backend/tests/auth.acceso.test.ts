@@ -8,7 +8,7 @@ import { pool } from '../src/db/pool';
 import { autenticar } from '../src/shared/middlewares/autenticar';
 import { autorizar } from '../src/shared/middlewares/autorizar';
 import { manejadorErrores } from '../src/shared/middlewares/manejador-errores';
-import { PASSWORD_PRUEBA } from '../scripts/seed';
+import { tokenDe as tokenDeApp } from './helpers/sesion';
 
 const app = crearApp();
 
@@ -21,10 +21,7 @@ appProtegida.post('/recurso', autenticar, autorizar('ADMINISTRADOR'), (_req, res
 });
 appProtegida.use(manejadorErrores);
 
-async function tokenDe(email: string): Promise<string> {
-  const res = await request(app).post('/api/auth/login').send({ email, password: PASSWORD_PRUEBA });
-  return res.body.token;
-}
+const tokenDe = (email: string) => tokenDeApp(app, email);
 
 describe('autenticar', () => {
   it('CA 10: rechaza peticiones sin token', async () => {
