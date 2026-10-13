@@ -75,6 +75,9 @@
               <td><app-badge [label]="vehiculo.estado === 'ACTIVO' ? 'Activo' : 'Inactivo'" [variant]="variante(vehiculo.estado)" /></td>
               <td class="row-actions">
                 <button type="button" class="row-button" (click)="abrirEdicion(vehiculo)" [attr.aria-label]="'Editar ' + vehiculo.placa">Editar</button>
+                @if (vehiculo.estado === 'ACTIVO') {
+                  <button type="button" class="row-button danger" (click)="pedirDesactivacion(vehiculo)" [attr.aria-label]="'Desactivar ' + vehiculo.placa">Desactivar</button>
+                }
               </td>
             </tr>
           } @empty {
@@ -194,6 +197,34 @@
           </button>
         </div>
       </form>
+    </section>
+  </div>
+}
+
+@if (porDesactivar(); as vehiculo) {
+  <div class="dialog-backdrop" (click)="cancelarDesactivacion()">
+    <section class="vehicle-dialog confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="deactivate-title" aria-describedby="deactivate-description" (click)="$event.stopPropagation()">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">INVENTARIO DE FLOTA</p>
+          <h2 id="deactivate-title">¿Desactivar el vehículo {{ vehiculo.placa }}?</h2>
+        </div>
+      </div>
+      <p id="deactivate-description" class="confirm-text">
+        {{ etiquetaTipo(vehiculo.tipo) }} {{ vehiculo.marca }} {{ vehiculo.modelo }} seguirá en el histórico,
+        pero no estará disponible para nuevas asignaciones.
+      </p>
+
+      @if (errorDesactivar()) {
+        <p class="form-error" role="alert">{{ errorDesactivar() }}</p>
+      }
+
+      <div class="dialog-actions">
+        <button class="cancel-button" type="button" [disabled]="desactivando()" (click)="cancelarDesactivacion()">Cancelar</button>
+        <button class="save-button danger-button" type="button" [disabled]="desactivando()" (click)="confirmarDesactivacion()">
+          {{ desactivando() ? 'Desactivando…' : 'Desactivar' }}
+        </button>
+      </div>
     </section>
   </div>
 }

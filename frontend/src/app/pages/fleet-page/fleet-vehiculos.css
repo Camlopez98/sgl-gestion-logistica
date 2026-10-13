@@ -106,6 +106,21 @@
   cursor: wait;
 }
 
+.confirm-dialog {
+  width: min(100%, 440px);
+}
+
+.confirm-text {
+  margin: 0 0 16px;
+  color: #506b68;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.danger-button {
+  background: var(--logi-button-danger-gradient) !important;
+}
+
 @media (max-width: 520px) {
   .three-filters {
     grid-template-columns: 1fr;

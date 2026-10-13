@@ -98,6 +98,11 @@ export class AppFleetPage {
   protected readonly puedeReintentar = signal(false);
   private solicitudPendiente: { huella: string; clave: string } | null = null;
 
+  // Confirmación de desactivación
+  protected readonly porDesactivar = signal<Vehiculo | null>(null);
+  protected readonly desactivando = signal(false);
+  protected readonly errorDesactivar = signal('');
+
   private readonly valoresFormulario = toSignal(this.formulario.valueChanges, { initialValue: this.formulario.value });
 
   /** Formato esperado según el tipo elegido (ayuda visible en el formulario). */
@@ -209,6 +214,38 @@ export class AppFleetPage {
         this.guardando.set(false);
         this.errorFormulario.set(mensajeDeError(error));
         this.puedeReintentar.set(!codigo || !CODIGOS_DE_DATOS.includes(codigo));
+      },
+    });
+  }
+
+  protected pedirDesactivacion(vehiculo: Vehiculo): void {
+    this.mensaje.set('');
+    this.errorDesactivar.set('');
+    this.porDesactivar.set(vehiculo);
+  }
+
+  protected cancelarDesactivacion(): void {
+    if (this.desactivando()) return;
+    this.porDesactivar.set(null);
+  }
+
+  /** HU-03, escenarios 6 y 7: desactivación lógica; se rechaza si el vehículo está en un viaje activo. */
+  protected confirmarDesactivacion(): void {
+    const vehiculo = this.porDesactivar();
+    if (!vehiculo || this.desactivando()) return;
+
+    this.desactivando.set(true);
+    this.errorDesactivar.set('');
+    this.vehiculoService.desactivar(vehiculo.id).subscribe({
+      next: (actualizado) => {
+        this.desactivando.set(false);
+        this.porDesactivar.set(null);
+        this.reemplazarEnListado(actualizado);
+        this.mensaje.set(`Vehículo ${actualizado.placa} desactivado. Se conserva en el histórico.`);
+      },
+      error: (error: unknown) => {
+        this.desactivando.set(false);
+        this.errorDesactivar.set(mensajeDeError(error));
       },
     });
   }
