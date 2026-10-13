@@ -5,6 +5,7 @@ import { AppDashboardPage } from './pages/dashboard-page/dashboard-page';
 import { AppDriverTripsPage } from './pages/driver-trips-page/driver-trips-page';
 import { AppFleetPage } from './pages/fleet-page/fleet-page';
 import { AppHistoryPage } from './pages/history-page/history-page';
+import { AppLoginPage } from './pages/login-page/login-page';
 import { AppReportsPage } from './pages/reports-page/reports-page';
 import { AppTripsPage } from './pages/trips-page/trips-page';
 import { AppUsersPage } from './pages/users-page/users-page';
@@ -29,6 +30,7 @@ export const rutasInternas: Routes = [
 ];
 
 export const routes: Routes = [
+  { path: 'login', component: AppLoginPage, title: 'LogiTrack | Iniciar sesión' },
   {
     path: '',
     component: AppShell,
