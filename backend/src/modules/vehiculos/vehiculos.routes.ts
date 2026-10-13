@@ -13,3 +13,5 @@ vehiculosRoutes.use(autenticar, autorizar('ADMINISTRADOR'));
 vehiculosRoutes.post('/', validar({ body: esquemaVehiculo }), vehiculosController.registrar);
 vehiculosRoutes.get('/', validar({ query: esquemaFiltrosVehiculos }), vehiculosController.listar);
 vehiculosRoutes.get('/:id', vehiculosController.obtener);
+vehiculosRoutes.put('/:id', validar({ body: esquemaVehiculo }), vehiculosController.editar);
+vehiculosRoutes.patch('/:id/desactivar', vehiculosController.desactivar);

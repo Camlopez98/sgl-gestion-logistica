@@ -14,3 +14,11 @@ export async function listar(req: Request, res: Response): Promise<void> {
 export async function obtener(req: Request<{ id: string }>, res: Response): Promise<void> {
   res.json(await vehiculosService.obtener(req.params.id));
 }
+
+export async function editar(req: Request<{ id: string }>, res: Response): Promise<void> {
+  res.json(await vehiculosService.editar(req.params.id, req.body as DatosVehiculo));
+}
+
+export async function desactivar(req: Request<{ id: string }>, res: Response): Promise<void> {
+  res.json(await vehiculosService.desactivar(req.params.id));
+}

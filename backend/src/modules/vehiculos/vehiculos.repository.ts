@@ -75,3 +75,22 @@ export async function buscarPorPlaca(placa: string, excluirId?: string): Promise
   );
   return rows[0] ?? null;
 }
+
+export async function actualizar(id: string, datos: DatosVehiculo): Promise<Vehiculo | null> {
+  const { rows } = await pool.query<Vehiculo>(
+    `UPDATE vehiculos
+     SET placa = $2, tipo = $3, marca = $4, modelo = $5, numero_ejes = $6, capacidad_carga_kg = $7
+     WHERE id = $1
+     RETURNING ${COLUMNAS}`,
+    [id, datos.placa, datos.tipo, datos.marca, datos.modelo, datos.numeroEjes, datos.capacidadCargaKg],
+  );
+  return rows[0] ?? null;
+}
+
+export async function cambiarEstado(id: string, estado: EstadoVehiculo): Promise<Vehiculo | null> {
+  const { rows } = await pool.query<Vehiculo>(
+    `UPDATE vehiculos SET estado = $2 WHERE id = $1 RETURNING ${COLUMNAS}`,
+    [id, estado],
+  );
+  return rows[0] ?? null;
+}
