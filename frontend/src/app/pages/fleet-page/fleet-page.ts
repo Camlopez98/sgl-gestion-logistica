@@ -1,149 +1,262 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AppBadge } from '../../components/app-badge/app-badge';
 import { AppButtonComponent } from '../../components/app-button/app-button';
 import { AppCard } from '../../components/app-card/app-card';
+import { codigoDeError, mensajeDeError } from '../../core/http/mensaje-error';
+import { formatoPlaca, normalizarPlaca, placaSegunTipo } from '../../vehiculos/placa';
+import {
+  TIPOS_VEHICULO,
+  etiquetaTipo,
+  type DatosVehiculo,
+  type EstadoVehiculo,
+  type TipoVehiculo,
+  type Vehiculo,
+} from '../../vehiculos/vehiculo.model';
+import { VehiculoService, nuevaClaveIdempotencia } from '../../vehiculos/vehiculo.service';
 
-type VehicleStatus = 'Activo' | 'En Mantenimiento';
+/** Errores que se corrigen cambiando los datos; los demás (red, servidor) permiten reintentar. */
+const CODIGOS_DE_DATOS = ['PLACA_DUPLICADA', 'PLACA_FORMATO_INVALIDO', 'DATOS_INVALIDOS', 'CLAVE_IDEMPOTENCIA_REUTILIZADA'];
 
-interface Vehicle {
-  plate: string;
-  model: string;
-  year: number;
-  driver: string;
-  kilometers: string;
-  status: VehicleStatus;
-  maintenance: string;
-}
-
+/** HU-03: gestión de vehículos de la flota (solo Administrador). */
 @Component({
   selector: 'app-fleet-page',
-  imports: [AppBadge, AppButtonComponent, AppCard],
+  imports: [AppBadge, AppButtonComponent, AppCard, ReactiveFormsModule],
   templateUrl: './fleet-page.html',
-  styleUrls: ['./fleet-page.css', './fleet-dialog.css'],
+  styleUrls: ['./fleet-page.css', './fleet-dialog.css', './fleet-vehiculos.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppFleetPage {
-  protected readonly vehicles = signal<Vehicle[]>([
-    { plate: 'ABC-123', model: 'Chevrolet NHR', year: 2022, driver: 'Carlos Méndez', kilometers: '45,200 km', status: 'Activo', maintenance: '15/10/2026' },
-    { plate: 'DEF-456', model: 'Hino 300', year: 2021, driver: 'Laura Gómez', kilometers: '62,800 km', status: 'Activo', maintenance: '20/09/2026' },
-    { plate: 'GHI-789', model: 'JAC X200', year: 2020, driver: 'Sin asignar', kilometers: '78,500 km', status: 'En Mantenimiento', maintenance: 'En taller' },
-    { plate: 'JKL-012', model: 'Hyundai HD65', year: 2023, driver: 'Diego Torres', kilometers: '12,300 km', status: 'Activo', maintenance: '01/11/2026' },
-    { plate: 'MNO-345', model: 'Foton Aumark', year: 2019, driver: 'Sin asignar', kilometers: '95,100 km', status: 'En Mantenimiento', maintenance: 'En taller' },
-    { plate: 'PQR-678', model: 'JAC X200', year: 2022, driver: 'Ana Ruiz', kilometers: '38,700 km', status: 'Activo', maintenance: '08/11/2026' },
-    { plate: 'STU-901', model: 'Chevrolet NHR', year: 2021, driver: 'Pedro Silva', kilometers: '51,400 km', status: 'Activo', maintenance: '12/11/2026' },
-    { plate: 'VWX-234', model: 'Hino 300', year: 2020, driver: 'Carlos Méndez', kilometers: '83,200 km', status: 'En Mantenimiento', maintenance: 'En taller' },
-    { plate: 'YZA-567', model: 'Hyundai HD65', year: 2024, driver: 'Laura Gómez', kilometers: '9,800 km', status: 'Activo', maintenance: '18/12/2026' },
-    { plate: 'BCD-890', model: 'Foton Aumark', year: 2022, driver: 'Diego Torres', kilometers: '29,600 km', status: 'Activo', maintenance: '22/11/2026' },
-    { plate: 'EFG-123', model: 'Chevrolet NHR', year: 2023, driver: 'Ana Ruiz', kilometers: '20,100 km', status: 'Activo', maintenance: '03/12/2026' },
-    { plate: 'HIJ-456', model: 'Hino 300', year: 2021, driver: 'Pedro Silva', kilometers: '67,300 km', status: 'Activo', maintenance: '10/12/2026' },
-  ]);
+  private readonly vehiculoService = inject(VehiculoService);
 
-  protected readonly searchTerm = signal('');
-  protected readonly statusFilter = signal('Todos');
-  protected readonly currentPage = signal(1);
-  protected readonly pageSize = 5;
-  protected readonly actionMessage = signal('');
-  protected readonly showForm = signal(false);
-  protected readonly formPlate = signal('');
-  protected readonly formModel = signal('');
-  protected readonly formYear = signal('');
-  protected readonly formDriver = signal('');
-  protected readonly formKilometers = signal('');
-  protected readonly formMaintenance = signal('');
-  protected readonly formError = signal('');
-  protected readonly activeCount = computed(() => this.vehicles().filter((vehicle) => vehicle.status === 'Activo').length);
-  protected readonly maintenanceCount = computed(() => this.vehicles().filter((vehicle) => vehicle.status === 'En Mantenimiento').length);
-  protected readonly metrics = computed(() => [
-    { title: 'Total vehículos', value: String(this.vehicles().length), detail: 'En inventario' },
-    { title: 'Activos', value: String(this.activeCount()), detail: 'En ruta' },
-    { title: 'En mantenimiento', value: String(this.maintenanceCount()), detail: 'En taller' },
-  ]);
-  protected readonly filteredVehicles = computed(() => {
-    const query = this.searchTerm().trim().toLocaleLowerCase();
-    const status = this.statusFilter();
-    return this.vehicles().filter((vehicle) => {
-      const searchable = `${vehicle.plate} ${vehicle.model} ${vehicle.driver}`.toLocaleLowerCase();
-      return (!query || searchable.includes(query)) && (status === 'Todos' || vehicle.status === status);
-    });
+  protected readonly tipos = TIPOS_VEHICULO;
+  protected readonly etiquetaTipo = etiquetaTipo;
+
+  // Listado
+  protected readonly vehiculos = signal<Vehiculo[]>([]);
+  protected readonly cargando = signal(true);
+  protected readonly errorCarga = signal('');
+  protected readonly mensaje = signal('');
+
+  // Filtros y paginación
+  protected readonly busqueda = signal('');
+  protected readonly filtroEstado = signal<EstadoVehiculo | ''>('');
+  protected readonly filtroTipo = signal<TipoVehiculo | ''>('');
+  protected readonly paginaActual = signal(1);
+  protected readonly tamanoPagina = 5;
+
+  protected readonly metricas = computed(() => {
+    const activos = this.vehiculos().filter((v) => v.estado === 'ACTIVO').length;
+    return [
+      { title: 'Total vehículos', value: String(this.vehiculos().length), detail: 'Registrados' },
+      { title: 'Activos', value: String(activos), detail: 'Disponibles' },
+      { title: 'Inactivos', value: String(this.vehiculos().length - activos), detail: 'En el histórico' },
+    ];
   });
-  protected readonly pageCount = computed(() => Math.max(1, Math.ceil(this.filteredVehicles().length / this.pageSize)));
-  protected readonly pageNumbers = computed(() => Array.from({ length: this.pageCount() }, (_, index) => index + 1));
-  protected readonly pagedVehicles = computed(() => this.filteredVehicles().slice((this.currentPage() - 1) * this.pageSize, this.currentPage() * this.pageSize));
-  protected readonly firstVisible = computed(() => this.filteredVehicles().length ? (this.currentPage() - 1) * this.pageSize + 1 : 0);
-  protected readonly lastVisible = computed(() => Math.min(this.currentPage() * this.pageSize, this.filteredVehicles().length));
 
-  protected onSearchInput(event: Event): void {
-    this.searchTerm.set((event.target as HTMLInputElement).value);
-    this.currentPage.set(1);
+  protected readonly vehiculosFiltrados = computed(() => {
+    const texto = normalizarTexto(this.busqueda());
+    const estado = this.filtroEstado();
+    const tipo = this.filtroTipo();
+    return this.vehiculos().filter(
+      (v) =>
+        (!texto || normalizarTexto(`${v.placa} ${v.marca} ${v.modelo}`).includes(texto)) &&
+        (!estado || v.estado === estado) &&
+        (!tipo || v.tipo === tipo),
+    );
+  });
+
+  protected readonly totalPaginas = computed(() => Math.max(1, Math.ceil(this.vehiculosFiltrados().length / this.tamanoPagina)));
+  protected readonly paginas = computed(() => Array.from({ length: this.totalPaginas() }, (_, i) => i + 1));
+  protected readonly vehiculosPagina = computed(() =>
+    this.vehiculosFiltrados().slice((this.paginaActual() - 1) * this.tamanoPagina, this.paginaActual() * this.tamanoPagina),
+  );
+  protected readonly primeroVisible = computed(() =>
+    this.vehiculosFiltrados().length ? (this.paginaActual() - 1) * this.tamanoPagina + 1 : 0,
+  );
+  protected readonly ultimoVisible = computed(() =>
+    Math.min(this.paginaActual() * this.tamanoPagina, this.vehiculosFiltrados().length),
+  );
+
+  // Formulario de registro y edición
+  protected readonly formulario = inject(FormBuilder).group(
+    {
+      placa: ['', Validators.required],
+      tipo: ['' as TipoVehiculo | '', Validators.required],
+      marca: ['', [Validators.required, Validators.maxLength(60)]],
+      modelo: ['', [Validators.required, Validators.maxLength(60)]],
+      numeroEjes: [null as number | null, [Validators.required, Validators.min(1), Validators.max(12), Validators.pattern(/^\d+$/)]],
+      capacidadCargaKg: [null as number | null, [Validators.required, Validators.min(0.01)]],
+    },
+    { validators: placaSegunTipo() },
+  );
+  protected readonly formularioAbierto = signal(false);
+  protected readonly editando = signal<Vehiculo | null>(null);
+  protected readonly guardando = signal(false);
+  protected readonly errorFormulario = signal('');
+  protected readonly puedeReintentar = signal(false);
+  private solicitudPendiente: { huella: string; clave: string } | null = null;
+
+  private readonly valoresFormulario = toSignal(this.formulario.valueChanges, { initialValue: this.formulario.value });
+
+  /** Formato esperado según el tipo elegido (ayuda visible en el formulario). */
+  protected readonly formatoEsperado = computed(() => {
+    const tipo = this.valoresFormulario().tipo;
+    return tipo ? formatoPlaca(tipo) : null;
+  });
+
+  /** Cómo quedará guardada la placa (HU-03, escenario 4). */
+  protected readonly placaNormalizada = computed(() => {
+    const original = this.valoresFormulario().placa ?? '';
+    const normalizada = normalizarPlaca(original);
+    return normalizada && normalizada !== original ? normalizada : '';
+  });
+
+  constructor() {
+    this.cargar();
   }
 
-  protected onStatusChange(event: Event): void {
-    this.statusFilter.set((event.target as HTMLSelectElement).value);
-    this.currentPage.set(1);
+  protected cargar(): void {
+    this.cargando.set(true);
+    this.errorCarga.set('');
+    this.vehiculoService.listar().subscribe({
+      next: (vehiculos) => {
+        this.vehiculos.set(vehiculos);
+        this.cargando.set(false);
+      },
+      error: (error: unknown) => {
+        this.errorCarga.set(mensajeDeError(error));
+        this.cargando.set(false);
+      },
+    });
   }
 
-  protected changePage(page: number): void {
-    this.currentPage.set(Math.min(Math.max(page, 1), this.pageCount()));
+  protected alBuscar(evento: Event): void {
+    this.busqueda.set((evento.target as HTMLInputElement).value);
+    this.paginaActual.set(1);
   }
 
-  protected vehicleStatusVariant(status: VehicleStatus): 'active' | 'maintenance' {
-    return status === 'Activo' ? 'active' : 'maintenance';
+  protected alFiltrarEstado(evento: Event): void {
+    this.filtroEstado.set((evento.target as HTMLSelectElement).value as EstadoVehiculo | '');
+    this.paginaActual.set(1);
   }
 
-  protected registerVehicle(): void {
-    this.formPlate.set('');
-    this.formModel.set('');
-    this.formYear.set('');
-    this.formDriver.set('');
-    this.formKilometers.set('');
-    this.formMaintenance.set('');
-    this.formError.set('');
-    this.showForm.set(true);
+  protected alFiltrarTipo(evento: Event): void {
+    this.filtroTipo.set((evento.target as HTMLSelectElement).value as TipoVehiculo | '');
+    this.paginaActual.set(1);
   }
 
-  protected closeForm(): void {
-    this.showForm.set(false);
+  protected cambiarPagina(pagina: number): void {
+    this.paginaActual.set(Math.min(Math.max(pagina, 1), this.totalPaginas()));
   }
 
-  protected updateFormField(field: 'plate' | 'model' | 'year' | 'driver' | 'kilometers' | 'maintenance', event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    if (field === 'plate') this.formPlate.set(value);
-    if (field === 'model') this.formModel.set(value);
-    if (field === 'year') this.formYear.set(value);
-    if (field === 'driver') this.formDriver.set(value);
-    if (field === 'kilometers') this.formKilometers.set(value);
-    if (field === 'maintenance') this.formMaintenance.set(value);
+  protected abrirRegistro(): void {
+    this.editando.set(null);
+    this.formulario.reset({ placa: '', tipo: '', marca: '', modelo: '', numeroEjes: null, capacidadCargaKg: null });
+    this.abrirFormulario();
   }
 
-  protected saveVehicle(event: Event): void {
-    event.preventDefault();
-    const plate = this.formPlate().trim().toLocaleUpperCase();
-    const model = this.formModel().trim();
-    const year = Number(this.formYear());
+  protected abrirEdicion(vehiculo: Vehiculo): void {
+    this.editando.set(vehiculo);
+    this.formulario.reset({
+      placa: vehiculo.placa,
+      tipo: vehiculo.tipo,
+      marca: vehiculo.marca,
+      modelo: vehiculo.modelo,
+      numeroEjes: vehiculo.numeroEjes,
+      capacidadCargaKg: vehiculo.capacidadCargaKg,
+    });
+    this.abrirFormulario();
+  }
 
-    if (!plate || !model || !year || year < 1980 || year > 2035) {
-      this.formError.set('Ingresa placa, modelo y un año válido entre 1980 y 2035.');
+  protected cerrarFormulario(): void {
+    if (this.guardando()) return;
+    this.formularioAbierto.set(false);
+  }
+
+  protected campoInvalido(campo: keyof typeof this.formulario.controls): boolean {
+    const control = this.formulario.controls[campo];
+    return control.invalid && control.touched;
+  }
+
+  protected guardar(): void {
+    if (this.guardando()) return;
+    if (this.formulario.invalid) {
+      this.formulario.markAllAsTouched();
       return;
     }
-    if (this.vehicles().some((vehicle) => vehicle.plate === plate)) {
-      this.formError.set('Ya existe un vehículo registrado con esa placa.');
-      return;
-    }
 
-    const vehicle: Vehicle = {
-      plate,
-      model,
-      year,
-      driver: this.formDriver().trim() || 'Sin asignar',
-      kilometers: `${this.formKilometers().trim() || '0'} km`,
-      status: 'Activo',
-      maintenance: this.formMaintenance().trim() || 'Por programar',
+    const datos = this.datosFormulario();
+    const editando = this.editando();
+    this.guardando.set(true);
+    this.errorFormulario.set('');
+
+    const solicitud = editando
+      ? this.vehiculoService.editar(editando.id, datos)
+      : this.vehiculoService.registrar(datos, this.claveParaRegistro(datos));
+
+    solicitud.subscribe({
+      next: (vehiculo) => {
+        this.solicitudPendiente = null;
+        this.guardando.set(false);
+        this.formularioAbierto.set(false);
+        this.reemplazarEnListado(vehiculo);
+        this.mensaje.set(editando ? `Vehículo ${vehiculo.placa} actualizado.` : `Vehículo ${vehiculo.placa} registrado.`);
+      },
+      error: (error: unknown) => {
+        const codigo = codigoDeError(error);
+        this.guardando.set(false);
+        this.errorFormulario.set(mensajeDeError(error));
+        this.puedeReintentar.set(!codigo || !CODIGOS_DE_DATOS.includes(codigo));
+      },
+    });
+  }
+
+  protected variante(estado: EstadoVehiculo): 'active' | 'inactive' {
+    return estado === 'ACTIVO' ? 'active' : 'inactive';
+  }
+
+  private abrirFormulario(): void {
+    this.mensaje.set('');
+    this.errorFormulario.set('');
+    this.puedeReintentar.set(false);
+    this.solicitudPendiente = null;
+    this.formularioAbierto.set(true);
+  }
+
+  private datosFormulario(): DatosVehiculo {
+    const valores = this.formulario.getRawValue();
+    return {
+      placa: normalizarPlaca(valores.placa ?? ''),
+      tipo: valores.tipo as TipoVehiculo,
+      marca: (valores.marca ?? '').trim(),
+      modelo: (valores.modelo ?? '').trim(),
+      numeroEjes: Number(valores.numeroEjes),
+      capacidadCargaKg: Number(valores.capacidadCargaKg),
     };
-    this.vehicles.update((vehicles) => [...vehicles, vehicle]);
-    this.currentPage.set(this.pageCount());
-    this.searchTerm.set('');
-    this.statusFilter.set('Todos');
-    this.showForm.set(false);
-    this.actionMessage.set(`Vehículo ${plate} agregado al inventario local.`);
   }
+
+  /**
+   * Misma clave mientras se reintenta con los mismos datos (el servidor devuelve el vehículo
+   * ya creado); clave nueva si el administrador cambió algún dato.
+   */
+  private claveParaRegistro(datos: DatosVehiculo): string {
+    const huella = JSON.stringify(datos);
+    if (this.solicitudPendiente?.huella !== huella) {
+      this.solicitudPendiente = { huella, clave: nuevaClaveIdempotencia() };
+    }
+    return this.solicitudPendiente.clave;
+  }
+
+  protected reemplazarEnListado(vehiculo: Vehiculo): void {
+    this.vehiculos.update((lista) => {
+      const sinEl = lista.filter((v) => v.id !== vehiculo.id);
+      return [...sinEl, vehiculo].sort((a, b) => a.placa.localeCompare(b.placa));
+    });
+  }
+}
+
+function normalizarTexto(texto: string): string {
+  return texto.trim().toLocaleLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }
