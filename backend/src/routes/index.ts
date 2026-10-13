@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { authRoutes } from '../modules/auth/auth.routes';
 
 /**
  * Punto único de registro de los módulos de la API.
@@ -12,4 +13,4 @@ apiRouter.get('/salud', (_req, res) => {
 });
 
 // Registro de módulos (una línea por módulo):
-// apiRouter.use('/auth', authRoutes);
+apiRouter.use('/auth', authRoutes);
