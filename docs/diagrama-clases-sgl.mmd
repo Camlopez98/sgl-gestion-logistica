@@ -1,0 +1,192 @@
+classDiagram
+    direction TB
+
+    %% ===================== JERARQUÍA DE ROLES =====================
+    class Rol {
+        <<Abstract>>
+        -UUID id
+        -String cedula
+        -String nombreCompleto
+        -String email
+        -String passwordHash
+        -Boolean estadoActivo
+        -DateTime createdAt
+        -DateTime updatedAt
+        +autenticar(pass: String) Boolean
+        +cambiarPassword(passActual: String, passNuevo: String) Boolean
+        +obtenerTipoRol()* String
+    }
+
+    class Conductor {
+        -String numeroLicencia
+        -String categoriaLicencia
+        -String telefonoContacto
+        +consultarVehiculosHabilitados() List~Vehiculo~
+        +obtenerVehiculoActivo() Vehiculo
+        +iniciarViaje(v: Vehiculo, e: Empresa, m: ManifiestoCarga, orig: String, dest: String, flete: Decimal) Viaje
+        +reportarGasto(v: Viaje, tipo: String, monto: Decimal, concepto: String, doc: String) GastoRuta
+        +reportarEntrega(v: Viaje) void
+        +consultarHistorial(filtroFecha: DateTime, estado: EstadoViaje) List~Viaje~
+    }
+
+    class Administrador {
+        -String cargoDirectivo
+        -String departamento
+        +registrarConductor(datos: Object) Conductor
+        +consultarConductores(estadoActivo: Boolean) List~Conductor~
+        +actualizarConductor(id: UUID, datos: Object) Conductor
+        +desactivarConductor(id: UUID) void
+        +registrarContador(datos: Object) Contador
+        +consultarContador() Contador
+        +registrarVehiculo(v: Vehiculo) Vehiculo
+        +consultarVehiculos(estado: EstadoVehiculo) List~Vehiculo~
+        +editarVehiculo(id: UUID, datos: Vehiculo) Vehiculo
+        +desactivarVehiculo(id: UUID) void
+        +asignarVehiculo(c: Conductor, v: Vehiculo) AsignacionVehiculo
+        +activarAsignacion(idAsignacion: UUID, idRemolque: UUID) void
+        +revocarAsignacion(idAsignacion: UUID) void
+        +registrarEmpresa(e: Empresa) Empresa
+        +consultarEmpresas() List~Empresa~
+        +consultarViajes(estado: EstadoViaje, conductorId: UUID, vehiculoId: UUID) List~Viaje~
+        +auditarViaje(v: Viaje) void
+        +finalizarViaje(v: Viaje) void
+        +corregirGasto(g: GastoRuta, nuevoMonto: Decimal, motivo: String) void
+        +generarDashboardFinanciero(criterio: String) Object
+    }
+
+    class Contador {
+        -String tarjetaProfesional
+        +consultarViajesValidados(rangoInicio: DateTime, rangoFin: DateTime, v: Vehiculo) List~Viaje~
+        +exportarConsolidadoExcel(rangoInicio: DateTime, rangoFin: DateTime, v: Vehiculo) Object
+    }
+
+    Rol <|-- Conductor : hereda
+    Rol <|-- Administrador : hereda
+    Rol <|-- Contador : hereda
+
+    %% ===================== FLOTA =====================
+    class Vehiculo {
+        -UUID id
+        -String placa
+        -String marca
+        -String modelo
+        -Integer numeroEjes
+        -TipoVehiculo tipo
+        -Decimal capacidadCargaKg
+        -EstadoVehiculo estado
+        -DateTime createdAt
+        -DateTime updatedAt
+        +estaActivo() Boolean
+        +desactivar() void
+        +esRemolcado() Boolean
+        +validarPlaca() Boolean
+    }
+
+    class EstadoVehiculo {
+        <<enumeration>>
+        ACTIVO
+        INACTIVO
+    }
+
+    class TipoVehiculo {
+        <<enumeration>>
+        FURGON
+        CAMION
+        TRACTOCAMION
+        REMOLQUE
+        SEMIRREMOLQUE
+    }
+
+    class AsignacionVehiculo {
+        -UUID id
+        -EstadoAsignacion estado
+        -DateTime fechaAsignacion
+        -DateTime fechaActivacion
+        -DateTime fechaFinalizacion
+        -DateTime createdAt
+        -DateTime updatedAt
+        +activar() void
+        +liberar() void
+        +finalizar() void
+    }
+
+    class EstadoAsignacion {
+        <<enumeration>>
+        HABILITADA
+        ACTIVA
+        FINALIZADA
+    }
+
+    Vehiculo --> EstadoVehiculo : estado
+    Vehiculo --> TipoVehiculo : tipo
+    AsignacionVehiculo --> EstadoAsignacion : estado
+    Conductor "1" -- "0..*" AsignacionVehiculo : habilitado en
+    AsignacionVehiculo "0..*" -- "1" Vehiculo : habilita
+    AsignacionVehiculo "0..*" --> "0..1" Vehiculo : remolque acoplado
+
+    note for Vehiculo "placa: clave candidata única (UNIQUE en BD), se guarda en mayúsculas sin espacios ni guion\nFURGON, CAMION, TRACTOCAMION: AAA999 (3 letras + 3 números)\nREMOLQUE: R99999 (R + 5 números)\nSEMIRREMOLQUE: S99999 (S + 5 números)\nnunca se elimina: se desactiva (estado = INACTIVO)"
+    note for AsignacionVehiculo "HABILITADA: el conductor puede manejar el vehículo\nACTIVA: vehículo que el conductor usa en el viaje actual\nSolo se habilitan vehículos automotores; el remolque se acopla al activar\nCAMION admite REMOLQUE; TRACTOCAMION admite SEMIRREMOLQUE\nInvariante 1: un conductor tiene máximo una asignación ACTIVA\nInvariante 2: un vehículo o remolque está en máximo una asignación ACTIVA\nInvariante 3: no se cambia la ACTIVA si el conductor tiene un viaje ACTIVO"
+
+    %% ===================== EMPRESAS =====================
+    class Empresa {
+        -UUID id
+        -String nit
+        -String razonSocial
+        -DateTime createdAt
+        -DateTime updatedAt
+    }
+
+    %% ===================== VIAJES =====================
+    class Viaje {
+        -UUID id
+        -EstadoViaje estado
+        -String origen
+        -String destino
+        -Decimal valorFlete
+        -Decimal saldoNeto
+        -Decimal impuestos
+        -DateTime fechaInicio
+        -DateTime fechaEntrega
+        -DateTime createdAt
+        -DateTime updatedAt
+        +agregarGasto(g: GastoRuta) void
+        +cambiarEstado(nuevoEstado: EstadoViaje) void
+        +calcularLiquidacionFinal() void
+        +getGastosTotales() Decimal
+    }
+
+    class EstadoViaje {
+        <<enumeration>>
+        ACTIVO
+        PENDIENTE_REVISION
+        FINALIZADO
+    }
+
+    class ManifiestoCarga {
+        -UUID id
+        -String numeroManifiesto
+        -String urlImagen
+        -String tipoMime
+        -Integer tamanoBytes
+        -DateTime fechaCarga
+        +validarIntegridad() Boolean
+        +comprimirImagen(ratio: Float) void
+    }
+
+    class GastoRuta {
+        -UUID id
+        -String tipo
+        -Decimal monto
+        -String concepto
+        -String urlSoporte
+        -DateTime createdAt
+        -DateTime updatedAt
+    }
+
+    Viaje --> EstadoViaje : estado
+    Conductor "1" --> "0..*" Viaje : realiza
+    Vehiculo "1" --> "0..*" Viaje : asignado a
+    Vehiculo "0..1" --> "0..*" Viaje : remolque
+    Empresa "1" --> "0..*" Viaje : contrata
+    Viaje "1" *-- "1" ManifiestoCarga : contiene
+    Viaje "1" *-- "0..*" GastoRuta : registra
