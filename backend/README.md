@@ -56,5 +56,28 @@ src/
 ├── config/env.ts    lectura y validación de variables de entorno
 ├── db/pool.ts       pool único de conexiones a PostgreSQL
 ├── db/transaccion.ts  ayuda para ejecutar varias consultas en una transacción
-└── routes/index.ts  punto único de registro de módulos
+├── routes/index.ts  punto único de registro de módulos
+└── shared/
+    ├── errors/app-error.ts            AppError(status, codigo, mensaje)
+    └── middlewares/
+        ├── manejador-errores.ts       traduce todo error a { codigo, mensaje }
+        ├── no-encontrado.ts           404 común
+        └── validar.ts                 validación con zod (422)
 ```
+
+## Formato de error
+
+Toda respuesta de error tiene la misma forma:
+
+```json
+{ "codigo": "PLACA_DUPLICADA", "mensaje": "La placa TKM482 ya está registrada." }
+```
+
+| Situación | Status | Código |
+|---|---|---|
+| `throw new AppError(status, codigo, mensaje)` en un servicio | el indicado | el indicado |
+| Datos que no cumplen el esquema zod | 422 | `DATOS_INVALIDOS` |
+| JSON mal formado | 400 | `JSON_INVALIDO` |
+| Violación de restricción `UNIQUE` no controlada | 409 | `REGISTRO_DUPLICADO` |
+| Ruta inexistente | 404 | `RECURSO_NO_ENCONTRADO` |
+| Cualquier otro error | 500 | `ERROR_INTERNO` |
