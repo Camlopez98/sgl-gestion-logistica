@@ -102,6 +102,50 @@ describe('AuthService', () => {
     expect(navegar).toHaveBeenCalledWith(['/login'], { queryParams: { motivo: 'cerrada' }, replaceUrl: true });
   });
 
+  describe('CA 11: renovación de la sesión por actividad', () => {
+    function iniciarCon(token: string) {
+      sessionStorage.setItem('sgl.token', token);
+      sessionStorage.setItem('sgl.usuario', JSON.stringify(conductor));
+      return configurar();
+    }
+
+    it('con actividad y menos de la mitad de vida restante, pide un token renovado', () => {
+      const { auth, http } = iniciarCon(tokenDePrueba(600, 'CONDUCTOR', 1200));
+      const renovado = tokenDePrueba(1800, 'CONDUCTOR');
+
+      document.dispatchEvent(new Event('pointerdown'));
+
+      http.expectOne(`${API}/auth/me`).flush(conductor, { headers: { 'X-Token-Renovado': renovado } });
+      expect(auth.token()).toBe(renovado);
+    });
+
+    it('no renueva un token que aún tiene más de la mitad de su vida', () => {
+      const { http } = iniciarCon(tokenDePrueba(1700, 'CONDUCTOR', 100));
+
+      document.dispatchEvent(new Event('keydown'));
+
+      http.expectNone(`${API}/auth/me`);
+    });
+
+    it('pide la renovación como máximo una vez por minuto', () => {
+      const { auth, http } = iniciarCon(tokenDePrueba(600, 'CONDUCTOR', 1200));
+
+      auth.registrarActividad();
+      auth.registrarActividad();
+      auth.registrarActividad();
+
+      http.expectOne(`${API}/auth/me`).flush(conductor);
+    });
+
+    it('sin sesión no pide nada', () => {
+      const { auth, http } = configurar();
+
+      auth.registrarActividad();
+
+      http.expectNone(`${API}/auth/me`);
+    });
+  });
+
   it('CA 11: cierra la sesión automáticamente cuando el token expira', () => {
     vi.useFakeTimers();
     try {
