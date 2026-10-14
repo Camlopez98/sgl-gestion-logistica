@@ -29,6 +29,39 @@ npm run dev               # http://localhost:3000/api
 
 Verificación: `GET http://localhost:3000/api/salud` responde `{ "estado": "ok" }`.
 
+## Base de datos compartida en Neon
+
+El equipo usa una base PostgreSQL en [Neon](https://neon.com) (plan gratuito) para compartir datos.
+Solo cambia `DATABASE_URL`; el código es el mismo que con la base local.
+
+**Si la base ya existe** (lo habitual para un integrante nuevo):
+
+1. Pida la cadena de conexión al responsable del proyecto en Neon (por un canal privado).
+2. Póngala en su `.env`, cambiando `sslmode=require` por `sslmode=verify-full`:
+   ```
+   DATABASE_URL=postgresql://usuario:contraseña@ep-xxxx-pooler.us-east-2.aws.neon.tech/neondb?sslmode=verify-full
+   ```
+3. `npm run dev`. No ejecute `npm run seed`: los usuarios de prueba ya existen.
+4. Cuando agregue migraciones nuevas, `npm run migrate:up` aplica solo las pendientes
+   (la tabla `pgmigrations` registra las ya aplicadas).
+
+**Para crear la base desde cero:**
+
+1. Cree un proyecto en Neon con solo *Postgres database* activado (sin Neon Auth, Object storage ni Functions).
+2. En *Connect*, con *Connection pooling* activado, copie la cadena y péguela en `DATABASE_URL`.
+3. `npm run migrate:up` y luego `npm run seed`.
+
+**Precauciones:**
+
+- La cadena contiene la contraseña: nunca la suba al repositorio ni la pegue en issues o chats públicos.
+- `DATABASE_URL_TEST` debe seguir apuntando a una base local (o a una rama de Neon solo para pruebas):
+  `npm test` vacía las tablas.
+- Con `sslmode=require`, la librería `pg` muestra una advertencia de seguridad; `sslmode=verify-full`
+  conserva la verificación completa del certificado y elimina el aviso.
+- Los datos son compartidos: lo que un integrante crea o borra lo ven los demás. Si estorba durante el
+  desarrollo, cree una rama propia en Neon (*Branches → Create branch*) y use su cadena de conexión.
+- En el plan gratuito la base se suspende tras unos minutos sin uso; la primera petición tarda un poco más.
+
 ## Scripts
 
 | Script | Uso |

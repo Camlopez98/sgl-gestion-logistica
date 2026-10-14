@@ -186,9 +186,14 @@ error: (e) => this.error.set(mensajeDeError(e));
 `AuthService` (`core/auth/auth.service.ts`) expone `usuario()`, `rol()` y `cerrarSesion()`.
 La sesión vive en `sessionStorage` (`sgl.token`, `sgl.usuario`). HU-05 debe borrar su caché sin conexión al cerrar sesión; el punto de enganche es `AuthService.descartarSesion()`.
 
-## 3. Usuarios de prueba
+## 3. Base de datos compartida y usuarios de prueba
 
-Contraseña `Sgl2026*` para todos: `admin@sgl.test`, `conductor@sgl.test`, `contador@sgl.test`, `inactivo@sgl.test` (inactivo).
+- La base compartida está en Neon y ya tiene todas las tablas y los usuarios de prueba.
+  Pida la cadena de conexión por un canal privado y póngala en `DATABASE_URL` de su `backend/.env`.
+  No ejecute `npm run seed` contra ella; `npm run migrate:up` solo aplica sus migraciones nuevas.
+  Pasos y precauciones en `backend/README.md`, sección "Base de datos compartida en Neon".
+- `DATABASE_URL_TEST` nunca apunta a Neon: `npm test` vacía las tablas.
+- Contraseña `Sgl2026*` para todos: `admin@sgl.test`, `conductor@sgl.test`, `contador@sgl.test`, `inactivo@sgl.test` (inactivo).
 
 ## 4. Archivos compartidos
 
