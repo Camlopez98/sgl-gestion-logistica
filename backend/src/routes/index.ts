@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asignacionesRoutes, historialVehiculoRoutes, vehiculoActivoRoutes } from '../modules/asignaciones/asignaciones.routes';
 import { authRoutes } from '../modules/auth/auth.routes';
+import { historialRoutes } from '../modules/historial/historial.routes';
 import { vehiculosRoutes } from '../modules/vehiculos/vehiculos.routes';
 
 /**
@@ -20,3 +21,4 @@ apiRouter.use('/vehiculos', vehiculosRoutes);
 apiRouter.use('/asignaciones', asignacionesRoutes);
 apiRouter.use('/vehiculos/:id/asignaciones', historialVehiculoRoutes);
 apiRouter.use('/conductores/me/vehiculo-activo', vehiculoActivoRoutes);
+apiRouter.use('/conductores/me/viajes', historialRoutes);

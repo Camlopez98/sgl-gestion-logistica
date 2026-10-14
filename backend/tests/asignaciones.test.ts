@@ -104,7 +104,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await pool.query('TRUNCATE solicitudes_idempotentes, asignaciones_vehiculo, vehiculos');
+  await pool.query('TRUNCATE solicitudes_idempotentes, asignaciones_vehiculo, gastos_ruta, manifiestos_carga, viajes, vehiculos');
 });
 
 afterEach(() => restablecerConsultaViajeActivoDeConductor());
@@ -877,7 +877,7 @@ describe('Fallas de red y concurrencia', () => {
   it('CA 18: dos administradores activan el mismo vehículo para conductores distintos: solo se aplica la primera', async () => {
     // Se repite varias veces para ejercitar distintos intercalados de las dos transacciones.
     for (let ronda = 0; ronda < 8; ronda++) {
-      await pool.query('TRUNCATE asignaciones_vehiculo, vehiculos');
+      await pool.query('TRUNCATE asignaciones_vehiculo, gastos_ruta, manifiestos_carga, viajes, vehiculos');
       const vehiculoId = await crearVehiculo('CAMION');
       const deAna = await habilitada(ana, vehiculoId);
       const deBeto = await habilitada(beto, vehiculoId);
@@ -899,7 +899,7 @@ describe('Fallas de red y concurrencia', () => {
 
   it('CA 18: dos administradores acoplan el mismo semirremolque a tractocamiones distintos: solo se aplica la primera', async () => {
     for (let ronda = 0; ronda < 5; ronda++) {
-      await pool.query('TRUNCATE asignaciones_vehiculo, vehiculos');
+      await pool.query('TRUNCATE asignaciones_vehiculo, gastos_ruta, manifiestos_carga, viajes, vehiculos');
       const semi = await crearVehiculo('SEMIRREMOLQUE');
       const deAna = await habilitada(ana, await crearVehiculo('TRACTOCAMION'));
       const deBeto = await habilitada(beto, await crearVehiculo('TRACTOCAMION'));
@@ -913,7 +913,7 @@ describe('Fallas de red y concurrencia', () => {
 
   it('dos administradores activan a la vez dos vehículos del mismo conductor: queda uno solo activo', async () => {
     for (let ronda = 0; ronda < 5; ronda++) {
-      await pool.query('TRUNCATE asignaciones_vehiculo, vehiculos');
+      await pool.query('TRUNCATE asignaciones_vehiculo, gastos_ruta, manifiestos_carga, viajes, vehiculos');
       const uno = await habilitada(ana, await crearVehiculo('CAMION'));
       const dos = await habilitada(ana, await crearVehiculo('TRACTOCAMION'));
 
@@ -956,7 +956,7 @@ describe('Fallas de red y concurrencia', () => {
 
   it('CA 19: dos modificaciones simultáneas con la misma versión: solo se aplica la primera', async () => {
     for (let ronda = 0; ronda < 5; ronda++) {
-      await pool.query('TRUNCATE asignaciones_vehiculo, vehiculos');
+      await pool.query('TRUNCATE asignaciones_vehiculo, gastos_ruta, manifiestos_carga, viajes, vehiculos');
       const tracto = await crearVehiculo('TRACTOCAMION');
       const semi1 = await crearVehiculo('SEMIRREMOLQUE');
       const semi2 = await crearVehiculo('SEMIRREMOLQUE');
