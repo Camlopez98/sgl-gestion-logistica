@@ -77,16 +77,14 @@ await enTransaccion(async (cliente) => {
 |---|---|---|---|
 | `usuarios` | `id UUID` | `nombre_completo`, `email`, `rol`, `estado_activo` | Disponible |
 | `conductores` | `usuario_id UUID` (FK a `usuarios.id`) | `numero_licencia`, `categoria_licencia`, `telefono_contacto` | Disponible |
-| `vehiculos` | `id UUID` | ver 1.6 | Llega con HU-03 |
+| `vehiculos` | `id UUID` | `placa`, `tipo`, `estado` (ver 1.6) | Disponible (HU-03) |
 
 Para referenciar a un conductor use `REFERENCES conductores (usuario_id)`: garantiza que el usuario tiene rol CONDUCTOR.
 Para saber si está activo: `JOIN usuarios u ON u.id = c.usuario_id WHERE u.estado_activo`.
 
 Repositorio reutilizable: `backend/src/modules/usuarios/usuario.repository.ts` (`buscarPorId`).
 
-### 1.6 Esquema previsto de `vehiculos` (HU-03, AB#23)
-
-Se entregará como migración propia. Puede programar HU-04 contra este esquema:
+### 1.6 Tabla `vehiculos` (HU-03, AB#23)
 
 | Columna | Tipo |
 |---|---|
@@ -99,7 +97,30 @@ Se entregará como migración propia. Puede programar HU-04 contra este esquema:
 | `estado` | `estado_vehiculo`: `ACTIVO`, `INACTIVO` |
 | `created_at`, `updated_at` | `TIMESTAMPTZ` |
 
-Regla compartida: HU-03 impide desactivar un vehículo con un viaje `ACTIVO`; esa consulta usará la tabla de viajes cuando exista.
+- Para HU-04: los automotores son `FURGON`, `CAMION` y `TRACTOCAMION`; `REMOLQUE` y `SEMIRREMOLQUE` se acoplan.
+  Solo se habilitan vehículos con `estado = 'ACTIVO'`.
+- Los vehículos nunca se borran; un vehículo desactivado deja de estar disponible para nuevas asignaciones.
+- Repositorio reutilizable: `backend/src/modules/vehiculos/vehiculos.repository.ts` (`buscarPorId`).
+
+**Viaje activo (HU-03, CA 7).** Vehículos no consulta la tabla de viajes directamente. El módulo de viajes,
+cuando exista, registra su consulta al cargarse:
+
+```ts
+import { registrarConsultaViajeActivo } from '../vehiculos/viajes-activos';
+registrarConsultaViajeActivo((vehiculoId) => viajesRepository.vehiculoTieneViajeActivo(vehiculoId));
+```
+
+### 1.6.1 Reintentos sin duplicados (`idempotente()`)
+
+Para creaciones que no deben duplicarse ante reintentos (HU-04, CA 17):
+
+```ts
+import { idempotente } from '../../shared/middlewares/idempotente';
+router.post('/', autenticar, autorizar('ADMINISTRADOR'), idempotente(), validar({ body: esquema }), controlador.crear);
+```
+
+El cliente envía `Idempotency-Key` (una clave por operación) y la reutiliza al reintentar con los mismos datos.
+Detalles en `backend/README.md`.
 
 ### 1.7 Migraciones
 
@@ -147,6 +168,10 @@ this.http.get<Respuesta>(`${environment.apiUrl}/conductores/me/viajes`, { params
 ```
 
 El interceptor ya agrega el token, renueva la sesión y maneja 401 (lleva al login) y 403 `ACCESO_DENEGADO` (vuelve al módulo del rol). No agregue encabezados de autorización a mano.
+
+Ejemplo completo de servicio con manejo de sin conexión, reenvío ante cortes e `Idempotency-Key`:
+`frontend/src/app/vehiculos/vehiculo.service.ts`. El listado de vehículos para seleccionar en asignaciones
+está disponible con `VehiculoService.listar({ estado: 'ACTIVO' })`.
 
 Mensajes de error para el usuario (sin conexión, servidor caído, mensaje del backend):
 
