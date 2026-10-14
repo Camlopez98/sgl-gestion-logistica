@@ -3,6 +3,7 @@
 Control de acceso basado en roles del SGL. Responde a la *Definition of Ready* de HU-18: "módulo de destino y funciones permitidas para cada rol".
 
 - **Roles:** `CONDUCTOR`, `ADMINISTRADOR`, `CONTADOR`. Un usuario tiene un solo rol (`usuarios.rol`).
+- **Acuerdo del equipo:** el "propietario" que mencionan HU-14, HU-15, HU-16 y HU-20 es el **Administrador**. No existe un cuarto rol.
 - **Dónde se aplica:**
   - **Servidor (autoridad):** middlewares `autenticar` y `autorizar(...roles)` en cada endpoint (RS-04). Una petición directa de un rol no permitido recibe `403 ACCESO_DENEGADO`.
   - **Interfaz (navegación):** `authGuard` y `rolGuard` según `data.roles` de cada ruta en `frontend/src/app/app.routes.ts`. El menú lateral solo muestra los módulos del rol. La interfaz ayuda a navegar, pero la seguridad la da el servidor.
@@ -63,16 +64,28 @@ Evidencia: `backend/tests/vehiculos.test.ts`, prueba "Seguridad (RS-04)": Conduc
 | Consultar el detalle de un viaje propio | `GET /api/conductores/me/viajes/{id}` | Propio (404 si no es suyo) | ✖ | ✖ |
 | Pantalla de historial | `/conductor/historial` | ✔ | ✖ | ✖ |
 
-### 2.5 Otros módulos del sistema · Pendiente (según el diagrama de clases)
+### 2.5 Otros módulos del sistema · Pendiente
 
-| Módulo | Funciones | Conductor | Administrador | Contador |
-|---|---|:---:|:---:|:---:|
-| Usuarios | Registrar, consultar, editar y desactivar conductores; registrar y consultar el contador | ✖ | ✔ | ✖ |
-| Empresas | Registrar y consultar empresas | ✖ | ✔ | ✖ |
-| Viajes y manifiestos | Iniciar viaje con su vehículo activo, reportar gastos y entrega | Propio | ✖ | ✖ |
-| Viajes y manifiestos | Consultar, auditar y finalizar viajes; corregir gastos | ✖ | ✔ | ✖ |
-| Reportes financieros | Dashboard financiero | ✖ | ✔ | ✖ |
-| Reportes financieros | Consultar viajes validados y exportar el consolidado a Excel (solo lectura) | ✖ | ✖ | ✔ |
+Según el backlog de Azure DevOps y el diagrama de clases. "Propietario" se lee como Administrador.
+
+| Módulo | Funciones | Historia | Conductor | Administrador | Contador |
+|---|---|---|:---:|:---:|:---:|
+| Recuperación de contraseña | Solicitar enlace o código y restablecer la contraseña | HU-09 | ✔ | ✔ | ✔ |
+| Usuarios | Registrar, consultar, editar y desactivar conductores; registrar y consultar el contador | Diagrama de clases | ✖ | ✔ | ✖ |
+| Empresas | Registrar y consultar empresas | Diagrama de clases | ✖ | ✔ | ✖ |
+| Registro de viajes y manifiesto | Registrar el viaje (formulario, QR y foto), guardarlo como borrador y retomarlo | HU-01, HU-02, HU-11, HU-19 | Propio | ✖ | ✖ |
+| Gastos y saldo del viaje | Registrar anticipos y gastos; ver el saldo en tiempo real | HU-12, HU-13 | Propio | ✖ | ✖ |
+| Viajes (gestión) | Consultar, auditar y finalizar viajes; corregir gastos | Diagrama de clases | ✖ | ✔ | ✖ |
+| Reglas de descuento | Crear, editar y desactivar reglas del cálculo del saldo | HU-06 | ✖ | ✔ | ✖ |
+| Alertas de manifiestos abandonados | Recibir y consultar alertas | HU-08 | ✖ | ✔ | ✖ |
+| Notificación de viaje finalizado | Recibir la notificación | HU-20 | ✖ | ✔ | ✖ |
+| Panel de historial de viajes | Listar viajes finalizados, ver el detalle y filtrar por placa y fechas | HU-14, HU-15 | ✖ | ✔ | ✖ |
+| Analíticas de ingresos | Gráficas de rentabilidad por vehículo | HU-16 | ✖ | ✔ | ✖ |
+| Auditoría financiera | Consultar el historial inmutable de cambios de montos por viaje | HU-07 | ✖ | ✖ | ✔ (solo lectura) |
+| Conciliación de pagos | Listar viajes pendientes de pago y marcarlos como pagados | HU-10 | ✖ | ✖ | ✔ |
+| Exportación a Excel | Descargar el histórico filtrado | HU-17, HU-10 (escenario 5) | ✖ | ✔ | ✔ |
+
+**Nota sobre el Contador:** HU-18 (escenario 3) lo describe "sin opciones de creación, edición ni borrado". HU-10 le permite **marcar viajes como pagados**, que es una escritura acotada a su función. Al implementar HU-10, `autorizar('CONTADOR')` debe aplicarse solo a ese endpoint; el resto de escrituras sigue respondiendo 403 al Contador.
 
 ---
 
