@@ -30,7 +30,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await pool.query('TRUNCATE solicitudes_idempotentes, vehiculos');
+  await pool.query('TRUNCATE solicitudes_idempotentes, asignaciones_vehiculo, vehiculos');
 });
 
 describe('Registro de vehículos con Idempotency-Key', () => {
