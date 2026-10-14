@@ -7,7 +7,7 @@ Sistema de Gestión Logística – Arquitectura de Software, Universidad de La S
 |---|---|
 | `backend/` | API REST (Node.js + Express + TypeScript + PostgreSQL). Ver `backend/README.md`. |
 | `frontend/` | Aplicación web (Angular). |
-| `docs/` | Historias de usuario, diagrama de clases y `CONTRATOS.md` (acuerdos de integración entre módulos). |
+| `docs/` | Historias de usuario, diagrama de clases, `CONTRATOS.md` (acuerdos de integración entre módulos) y `PROCESO.md` (registro del proceso de desarrollo). |
 
 ## Ejecución local
 
