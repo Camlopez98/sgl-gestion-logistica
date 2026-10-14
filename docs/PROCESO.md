@@ -128,6 +128,12 @@ Cada commit incluye `AB#38` o `AB#23` en el mensaje. Azure DevOps los muestra en
 | `0ca535d` | Angular 21.2.23 → 21.2.25: corrige las 7 vulnerabilidades de `npm audit` (de 7 a 0) |
 | `0a98823` | Documentación de la base compartida en Neon |
 
+### Fase 10 · Cierre de brechas de cumplimiento (AB#38, AB#23)
+
+- **Sesión por inactividad real:** el frontend detecta la actividad del usuario y renueva el token aunque la pantalla no llame a la API. Verificado con una sesión de 20 s: con actividad se mantiene; sin actividad se cierra con el aviso de expiración.
+- **`docs/MATRIZ-RBAC.md`:** matriz de roles y permisos (DoR de HU-18).
+- **HU-18 y HU-03:** definiciones acordadas (identificador, expiración, mensajes de error, manejo de errores de red) y tablas de cumplimiento de DoR y DoD con su evidencia.
+
 ### Pull requests
 
 | PR | Contenido | Estado |
@@ -173,7 +179,7 @@ Cada commit incluye `AB#38` o `AB#23` en el mensaje. Azure DevOps los muestra en
 | 8 Conductor abre URL del administrador | `rolGuard` lo devuelve a su módulo | `auth.guards.spec.ts` |
 | 9 Contador escribe directo al servidor | `autorizar` responde 403 | `auth.acceso.test.ts`, `vehiculos.test.ts` |
 | 10 Sin sesión | `authGuard` y `autenticar` (401) | `auth.guards.spec.ts`, `auth.acceso.test.ts` |
-| 11 Sesión expirada | Expiración del JWT, renovación por actividad, aviso en el login | `auth.acceso.test.ts`, `auth.service.spec.ts`, `auth.interceptor.spec.ts` |
+| 11 Sesión expirada | Expiración del JWT, renovación según la actividad del usuario, aviso en el login | `auth.acceso.test.ts`, `auth.service.spec.ts`, `auth.interceptor.spec.ts` |
 | 12 Botón "atrás" tras cerrar sesión | Sesión borrada, `replaceUrl`, guards, `Cache-Control: no-store` | `auth.guards.spec.ts`, `auth.service.spec.ts` |
 | 13 Bitácora de intentos fallidos | Tabla `bitacora_intentos_fallidos` | `auth.login.test.ts` |
 | 14 Sin conexión | `mensajeDeError` detecta la falta de internet | `mensaje-error.spec.ts`, `login-page.spec.ts` |
@@ -201,7 +207,7 @@ Cada commit incluye `AB#38` o `AB#23` en el mensaje. Azure DevOps los muestra en
 | Verificación | Resultado |
 |---|---|
 | Pruebas del backend (Vitest + supertest, base de pruebas aparte) | 71 pruebas pasando |
-| Pruebas del frontend (Vitest) | 82 pruebas pasando |
+| Pruebas del frontend (Vitest) | 86 pruebas pasando |
 | Compilación de producción del frontend | Sin advertencias |
 | `npm audit` (backend y frontend) | 0 vulnerabilidades |
 | Prueba manual en navegador | Login de los tres roles, menú por rol, rechazo del conductor en el dashboard, registro, edición, filtros y desactivación de vehículos, aviso sin conexión |
@@ -220,7 +226,6 @@ cd frontend && npx ng test --watch=false && npx ng build
 
 - **HU-03, CA 7:** la regla "no desactivar un vehículo en viaje activo" está implementada y probada con datos simulados. Funcionará con datos reales cuando el módulo de viajes llame a `registrarConsultaViajeActivo()`.
 - **Cierre de sesión:** el token JWT no se invalida en el servidor (es sin estado). El frontend lo elimina, y la verificación del estado activo en cada petición corta el acceso de usuarios desactivados.
-- **Renovación de sesión:** ocurre cuando una pantalla llama a la API. Las pantallas que aún usan datos de ejemplo no la provocan.
 - **Pantallas provisionales:** "Mis viajes en curso" (Conductor) y "Visor de reportes" (Contador) existen como destino de la redirección; su contenido pertenece a otras historias.
 - **Capacidad de carga:** la HU-03 no fija un máximo; se acepta cualquier valor mayor que cero.
 

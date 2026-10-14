@@ -82,3 +82,60 @@ Las reglas de habilitación, activación y acople de remolques están en HU-04.
 - Commits con `AB#23`.
 
 Diagrama de clases: `docs/diagrama-clases-sgl.mmd`.
+
+## Manejo de errores de red y de servidor (Definition of Ready)
+
+Definición aplicada en el panel administrativo (`fleet-page`) y en `VehiculoService`:
+
+| Situación | Comportamiento | CA |
+|---|---|---|
+| Sin conexión a internet al guardar | No se envía la solicitud; el formulario sigue abierto con los datos y muestra "No hay conexión a internet…" con el botón **Reintentar**. | 8 |
+| La conexión se corta durante la solicitud | El cliente reenvía automáticamente hasta 2 veces (a 1 s y 2 s), con la misma clave `Idempotency-Key`. | 10 |
+| El servidor no responde (15 s) o devuelve 5xx | Mensaje "El servidor no responde…" o "El servidor presentó un error…"; el formulario conserva los datos y ofrece **Reintentar**. | 9 |
+| Reintento de un registro que el servidor ya guardó | Con la misma clave, el servidor devuelve el vehículo ya creado en lugar de duplicarlo o responder "placa duplicada". | 9 |
+| Dos solicitudes simultáneas con la misma placa | La restricción `UNIQUE` de la base acepta una y rechaza la otra con `409 PLACA_DUPLICADA`. | 10 |
+| Datos modificados después de un error | Se genera una clave nueva: es otra operación. | 9 |
+| Error al cargar el listado | Mensaje de error con botón **Reintentar**; no se muestra una tabla vacía engañosa. | — |
+| Doble clic en Guardar | El botón se deshabilita mientras la solicitud está en curso ("Guardando…"). | 9 |
+
+### Mensajes del servidor
+
+| Situación | Código | Mensaje |
+|---|---|---|
+| Placa repetida | `409 PLACA_DUPLICADA` | La placa TKM482 ya está registrada. |
+| Placa que no corresponde al tipo | `422 PLACA_FORMATO_INVALIDO` | La placa R12345 no corresponde a un TRACTOCAMION. Formato esperado: AAA999 (3 letras y 3 números). |
+| Campos inválidos | `422 DATOS_INVALIDOS` | Indica el campo y la regla incumplida. |
+| Vehículo inexistente | `404 VEHICULO_NO_ENCONTRADO` | El vehículo no existe. |
+| Desactivar un vehículo en viaje activo | `409 VEHICULO_EN_VIAJE_ACTIVO` | El vehículo TKM482 está en un viaje activo y no se puede desactivar. |
+| Misma clave de solicitud con otros datos | `422 CLAVE_IDEMPOTENCIA_REUTILIZADA` | La clave de la solicitud ya se usó con otros datos. Recargue el formulario e intente de nuevo. |
+| Reintento mientras la original se procesa | `409 SOLICITUD_EN_PROCESO` | La solicitud anterior todavía se está procesando. Intente de nuevo en unos segundos. |
+| Rol distinto de Administrador | `403 ACCESO_DENEGADO` | No tiene permisos para realizar esta acción. |
+
+## Estado de cumplimiento
+
+### Definition of Ready
+
+| Ítem | Estado | Evidencia |
+|---|---|---|
+| Modelo de *Vehículo* en el diagrama de clases | Cumplido | `docs/diagrama-clases-sgl.mmd`; migración `backend/migrations/*_vehiculos.sql` |
+| Reglas de placa (formato, normalización, unicidad) | Cumplido | Tabla "Reglas de negocio" de esta historia; implementadas en cliente, servidor y base de datos |
+| RF-11 actualizado en el SRS | **Pendiente del equipo** | El SRS no está en el repositorio; debe reflejar registrar, consultar, editar y desactivar |
+| Manejo de errores de red y servidor definido | Cumplido | Sección "Manejo de errores de red y de servidor" |
+
+### Definition of Done
+
+| Ítem | Estado | Evidencia |
+|---|---|---|
+| CRUD probado, con rechazo de placas duplicadas y de formato inválido | Cumplido | `backend/tests/vehiculos.test.ts`, `frontend/.../fleet-page.spec.ts`, `placa.spec.ts`; verificación manual en navegador |
+| Vehículos inactivos no se eliminan y permanecen en el histórico | Cumplido | Prueba CA 6 en `vehiculos.test.ts` y `fleet-page.spec.ts` |
+| Solo el Administrador gestiona vehículos, también con peticiones directas | Cumplido | Prueba "Seguridad (RS-04)" en `vehiculos.test.ts` |
+| Falla de conexión y caída del servidor sin duplicados ni datos corruptos | Cumplido | `idempotencia.test.ts`, `vehiculo.service.spec.ts`, prueba CA 10 (registro simultáneo) en `vehiculos.test.ts`, prueba CA 9 en `fleet-page.spec.ts`; verificación manual sin conexión |
+
+### Criterios de aceptación
+
+| CA | Estado |
+|---|---|
+| 1-6, 8-10 | Implementados y cubiertos por pruebas automáticas |
+| 7 | Implementado y probado con un viaje simulado. Su verificación con datos reales depende de la tabla de viajes (historia de registro de viajes): ese módulo debe registrar su consulta con `registrarConsultaViajeActivo()` (`backend/src/modules/vehiculos/viajes-activos.ts`). Mientras no lo haga, el sistema asume que no hay viajes activos. |
+
+La tabla de trazabilidad (escenario → implementación → prueba) está en `docs/PROCESO.md`, sección 4.

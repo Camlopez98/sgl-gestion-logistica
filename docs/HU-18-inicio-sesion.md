@@ -73,3 +73,71 @@ El sistema debe validar la identidad de todo usuario (Conductor, Administrador o
 - **Backend:** endpoint de login con verificación del hash, emisión de token con expiración, middleware que valida token y rol en cada endpoint, rechazo de usuarios inactivos y bitácora de intentos fallidos.
 - **Frontend (`develop-camilo`):** pantalla de login con validación de campos, `AuthService` (login, logout, guardar token y rol), interceptor HTTP que agrega el token y maneja 401/403, *guards* de rutas por rol y redirección al módulo de cada rol.
 - Commits con `AB#38` para enlazarlos al ítem de Azure DevOps.
+
+## Definiciones acordadas (Definition of Ready)
+
+### Roles y pantallas de destino
+
+La matriz completa de roles y permisos está en `docs/MATRIZ-RBAC.md`.
+
+| Rol | Pantalla de destino | Ruta |
+|---|---|---|
+| Conductor | Mis viajes en curso | `/conductor/viajes-en-curso` |
+| Administrador | Dashboard administrativo | `/admin/dashboard` |
+| Contador | Visor de reportes (solo lectura) | `/contador/reportes` |
+
+### Identificador de acceso y sesión
+
+| Aspecto | Definición |
+|---|---|
+| Identificador | Correo electrónico, único sin distinguir mayúsculas; se normaliza (sin espacios, en minúsculas). |
+| Expiración por inactividad | 30 minutos (`JWT_EXPIRA_EN=1800`). Mientras el usuario interactúa, el token se renueva cuando le queda menos de la mitad de su vida; tras 30 minutos sin actividad expira y se muestra "Su sesión expiró por inactividad". |
+| Almacenamiento de la sesión | `sessionStorage` del navegador: se borra al cerrar el navegador y al cerrar sesión. |
+
+### Mensajes de error
+
+| Situación | Código | Mensaje mostrado |
+|---|---|---|
+| Correo vacío | — (formulario) | El correo es obligatorio. |
+| Correo con formato inválido | — (formulario) | Ingrese un correo con formato válido. |
+| Contraseña vacía | — (formulario) | La contraseña es obligatoria. |
+| Contraseña equivocada o correo no registrado | `401 CREDENCIALES_INVALIDAS` | Credenciales incorrectas, inténtelo de nuevo. (en rojo) |
+| Cuenta desactivada | `403 CUENTA_INACTIVA` | Su cuenta está inactiva. Comuníquese con el administrador. |
+| Sin conexión a internet | — (red) | No hay conexión a internet. Verifique su conexión e inténtelo de nuevo. |
+| Servidor sin respuesta | — (red) | El servidor no responde. Inténtelo de nuevo en unos momentos. |
+| Error del servidor (5xx) | `500 ERROR_INTERNO` | El servidor presentó un error. Inténtelo de nuevo en unos momentos. |
+| Sesión expirada por inactividad | `401 SESION_EXPIRADA` | Su sesión expiró por inactividad. Inicie sesión nuevamente. |
+| Cuenta desactivada durante la sesión | `401 CUENTA_INACTIVA` | Su cuenta está inactiva. Comuníquese con el administrador. |
+| Sesión inválida | `401 TOKEN_INVALIDO` | Su sesión ya no es válida. Inicie sesión nuevamente. |
+| Acceso a una función de otro rol | `403 ACCESO_DENEGADO` | No tiene permisos para realizar esta acción. (se devuelve al usuario a su módulo) |
+| Cierre de sesión voluntario | — | Cerró sesión correctamente. |
+
+## Estado de cumplimiento
+
+### Definition of Ready
+
+| Ítem | Estado | Evidencia |
+|---|---|---|
+| Matriz de roles y permisos documentada | Cumplido | `docs/MATRIZ-RBAC.md` |
+| Pantalla de inicio de sesión diseñada y destino por rol | Cumplido | `frontend/src/app/pages/login-page/`; tabla "Roles y pantallas de destino" |
+| Identificador y tiempo de expiración acordados | Cumplido | Tabla "Identificador de acceso y sesión" |
+| Mensajes de error definidos | Cumplido | Tabla "Mensajes de error" |
+
+### Definition of Done
+
+| Ítem | Estado | Evidencia |
+|---|---|---|
+| Contraseñas con hash y salt (bcrypt) | Cumplido | `backend/src/modules/auth/password.ts`; prueba "guarda las contraseñas con hash bcrypt" en `backend/tests/auth.login.test.ts` |
+| Tokens firmados con expiración y sesión por inactividad | Cumplido | `backend/src/shared/seguridad/token.ts`, `autenticar.ts`; `AuthService.registrarActividad`; pruebas en `auth.acceso.test.ts` y `auth.service.spec.ts`; verificación manual con sesión de 20 s |
+| Redirección probada para los tres roles | Cumplido | `login-page.spec.ts`, `auth.guards.spec.ts`; verificación manual en navegador |
+| Control de acceso probado en el servidor | Cumplido | `auth.acceso.test.ts` (CA 9), `vehiculos.test.ts` (Seguridad RS-04) |
+| Intentos fallidos en bitácora | Cumplido | Tabla `bitacora_intentos_fallidos`; prueba CA 13 en `auth.login.test.ts` |
+| Credenciales incorrectas, usuario inactivo y fallas de red probados | Cumplido | `auth.login.test.ts`, `login-page.spec.ts`, `mensaje-error.spec.ts` |
+
+### Criterios de aceptación
+
+Los 15 escenarios están implementados y cubiertos por pruebas automáticas. La tabla de trazabilidad (escenario → implementación → prueba) está en `docs/PROCESO.md`, sección 4.
+
+### Limitación conocida
+
+El cierre de sesión no invalida el token en el servidor (JWT sin estado): el frontend lo elimina, y el servidor verifica en cada petición que el usuario siga activo.
