@@ -5,6 +5,7 @@ import type { DatosRuta } from './core/auth/auth.models';
 import { AuthService } from './core/auth/auth.service';
 import { AppShell } from './layout/shell/shell';
 import { AppDashboardPage } from './pages/dashboard-page/dashboard-page';
+import { AppAssignmentsPage } from './pages/assignments-page/assignments-page';
 import { AppDriverTripsPage } from './pages/driver-trips-page/driver-trips-page';
 import { AppFleetPage } from './pages/fleet-page/fleet-page';
 import { AppHistoryPage } from './pages/history-page/history-page';
@@ -22,6 +23,7 @@ export const rutasInternas: Routes = [
   { path: 'admin/dashboard', component: AppDashboardPage, data: { titulo: 'Dashboard', menu: 'Dashboard', roles: ['ADMINISTRADOR'] } satisfies DatosRuta },
   { path: 'admin/viajes', component: AppTripsPage, data: { titulo: 'Viajes', menu: 'Viajes', roles: ['ADMINISTRADOR'] } satisfies DatosRuta },
   { path: 'admin/flota', component: AppFleetPage, data: { titulo: 'Gestión de Flota', menu: 'Flota', roles: ['ADMINISTRADOR'], separadorAntes: true } satisfies DatosRuta },
+  { path: 'admin/asignaciones', component: AppAssignmentsPage, data: { titulo: 'Asignación de Vehículos', menu: 'Asignaciones', roles: ['ADMINISTRADOR'] } satisfies DatosRuta },
   { path: 'admin/usuarios', component: AppUsersPage, data: { titulo: 'Gestión de Conductores', menu: 'Usuarios', roles: ['ADMINISTRADOR'] } satisfies DatosRuta },
 
   // Conductor

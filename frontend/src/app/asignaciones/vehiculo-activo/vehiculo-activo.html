@@ -1,0 +1,30 @@
+<section class="vehiculo-activo" aria-labelledby="vehiculo-activo-titulo">
+  <h2 id="vehiculo-activo-titulo">Mi vehículo para el manifiesto</h2>
+
+  @if (cargando()) {
+    <p class="estado" role="status">Consultando su vehículo asignado…</p>
+  } @else if (sinVehiculo()) {
+    <p class="estado sin-vehiculo" role="alert">{{ mensajeSinVehiculo }}</p>
+  } @else if (error()) {
+    <div class="estado error" role="alert">
+      <span>{{ error() }}</span>
+      <button type="button" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else if (activo(); as activo) {
+    <label class="campo">
+      <span>Vehículo</span>
+      <select name="vehiculo" aria-label="Vehículo">
+        <option [value]="activo.vehiculo.id" selected>{{ descripcion(activo.vehiculo) }}</option>
+      </select>
+    </label>
+
+    @if (activo.remolque; as remolque) {
+      <label class="campo">
+        <span>{{ remolque.tipo === 'REMOLQUE' ? 'Remolque' : 'Semirremolque' }} acoplado</span>
+        <select name="remolque" [attr.aria-label]="remolque.tipo === 'REMOLQUE' ? 'Remolque' : 'Semirremolque'">
+          <option [value]="remolque.id" selected>{{ descripcion(remolque) }}</option>
+        </select>
+      </label>
+    }
+  }
+</section>

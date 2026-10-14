@@ -1,0 +1,308 @@
+<section class="page-heading" aria-labelledby="assignments-title">
+  <div>
+    <p class="eyebrow">RECURSOS DE OPERACIÓN</p>
+    <h1 id="assignments-title">Asignación de Vehículos</h1>
+    <p class="page-description">Habilite vehículos a los conductores y active el que usarán en su viaje</p>
+  </div>
+  <app-button label="+ Habilitar Vehículo" variant="primary" (btnClick)="abrirHabilitar()" />
+</section>
+
+<section class="fleet-summary" aria-label="Resumen de asignaciones">
+  @for (metrica of metricas(); track metrica.title) {
+    <app-card [title]="metrica.title" [value]="metrica.value" [detail]="metrica.detail" />
+  }
+</section>
+
+<section class="fleet-panel" aria-labelledby="assignments-list-title">
+  <div class="fleet-panel-heading">
+    <h2 id="assignments-list-title">Asignaciones</h2>
+    <span>{{ asignacionesFiltradas().length }} asignaciones</span>
+  </div>
+
+  <div class="fleet-filters" aria-label="Filtros de asignaciones">
+    <label class="filter-field">
+      <span class="visually-hidden">Buscar asignaciones</span>
+      <input type="search" placeholder="Buscar por conductor, cédula o placa..." (input)="alBuscar($event)" />
+    </label>
+    <label class="filter-field">
+      <span class="visually-hidden">Filtrar por estado</span>
+      <select (change)="alFiltrarEstado($event)">
+        <option value="VIGENTES">Vigentes</option>
+        <option value="TODAS">Todas</option>
+        @for (estado of estados; track estado.valor) {
+          <option [value]="estado.valor">{{ estado.etiqueta }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  @if (aviso()) {
+    <div class="action-message warning-message" role="alert">
+      <span>{{ aviso() }}</span>
+      <button type="button" aria-label="Cerrar aviso" (click)="aviso.set('')">×</button>
+    </div>
+  }
+
+  @if (cargando()) {
+    <p class="list-state" role="status">Cargando asignaciones…</p>
+  } @else if (errorCarga()) {
+    <div class="list-state error" role="alert">
+      <span>{{ errorCarga() }}</span>
+      <button class="retry-button" type="button" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="fleet-table-scroll">
+      <table class="fleet-table">
+        <thead>
+          <tr>
+            <th scope="col">Conductor</th>
+            <th scope="col">Vehículo</th>
+            <th scope="col">Remolque</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Inicio</th>
+            <th scope="col">Activación</th>
+            <th scope="col">Fin</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (asignacion of asignacionesPagina(); track asignacion.id) {
+            <tr class="assignment-row" [class.inactive-row]="asignacion.estado === 'FINALIZADA'">
+              <td>{{ asignacion.conductorNombre }}</td>
+              <td><span class="plate-cell">{{ asignacion.vehiculoPlaca }}</span> {{ etiquetaTipo(asignacion.vehiculoTipo) }}</td>
+              <td class="plate-cell">{{ asignacion.remolquePlaca ?? '—' }}</td>
+              <td><app-badge [label]="etiquetaEstado(asignacion.estado)" [variant]="variante(asignacion.estado)" /></td>
+              <td>{{ asignacion.fechaAsignacion | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>{{ asignacion.fechaActivacion ? (asignacion.fechaActivacion | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
+              <td>{{ asignacion.fechaFinalizacion ? (asignacion.fechaFinalizacion | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
+              <td class="row-actions">
+                @if (asignacion.estado === 'HABILITADA') {
+                  <button type="button" class="row-button" (click)="pedirActivacion(asignacion)" [attr.aria-label]="'Activar ' + asignacion.vehiculoPlaca + ' para ' + asignacion.conductorNombre">Activar</button>
+                } @else if (asignacion.estado === 'ACTIVA' && admiteAcople(asignacion)) {
+                  <button type="button" class="row-button" (click)="pedirActivacion(asignacion)" [attr.aria-label]="'Cambiar el acople de ' + asignacion.vehiculoPlaca">Acople</button>
+                }
+                @if (asignacion.estado !== 'FINALIZADA') {
+                  <button type="button" class="row-button danger" (click)="pedirFinalizacion(asignacion)" [attr.aria-label]="'Finalizar ' + asignacion.vehiculoPlaca + ' de ' + asignacion.conductorNombre">Finalizar</button>
+                }
+                <button type="button" class="row-button" (click)="verHistorial(asignacion.vehiculoId, asignacion.vehiculoPlaca)" [attr.aria-label]="'Historial de ' + asignacion.vehiculoPlaca">Historial</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td class="empty-row" colspan="8">
+                {{ asignaciones().length ? 'No hay asignaciones que coincidan con estos filtros.' : 'Aún no hay vehículos habilitados a conductores.' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="fleet-pagination">
+      <span>Mostrando {{ primeroVisible() }}-{{ ultimoVisible() }} de {{ asignacionesFiltradas().length }} asignaciones</span>
+      <nav class="pagination-controls" aria-label="Paginación de asignaciones">
+        <button type="button" aria-label="Página anterior" [disabled]="paginaActual() === 1" (click)="cambiarPagina(paginaActual() - 1)">‹</button>
+        @for (pagina of paginas(); track pagina) {
+          <button type="button" [class.current]="paginaActual() === pagina" [attr.aria-current]="paginaActual() === pagina ? 'page' : null" [attr.aria-label]="'Página ' + pagina" (click)="cambiarPagina(pagina)">{{ pagina }}</button>
+        }
+        <button type="button" aria-label="Página siguiente" [disabled]="paginaActual() === totalPaginas()" (click)="cambiarPagina(paginaActual() + 1)">›</button>
+      </nav>
+    </footer>
+  }
+
+  @if (mensaje()) {
+    <div class="action-message" role="status">
+      <span>{{ mensaje() }}</span>
+      <button type="button" aria-label="Cerrar mensaje" (click)="mensaje.set('')">×</button>
+    </div>
+  }
+</section>
+
+@if (habilitarAbierto()) {
+  <div class="dialog-backdrop" (click)="cerrarHabilitar()">
+    <section class="vehicle-dialog" role="dialog" aria-modal="true" aria-labelledby="enable-title" (click)="$event.stopPropagation()">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">ASIGNACIÓN DE VEHÍCULOS</p>
+          <h2 id="enable-title">Habilitar vehículo a un conductor</h2>
+        </div>
+        <button class="dialog-close" type="button" aria-label="Cerrar formulario" (click)="cerrarHabilitar()">×</button>
+      </div>
+
+      @if (cargandoCatalogos()) {
+        <p class="list-state dialog-state" role="status">Cargando conductores y vehículos…</p>
+      } @else {
+        <form (submit)="$event.preventDefault(); habilitar()" novalidate>
+          <div class="dialog-grid">
+            <label class="dialog-field" [class.invalid]="seleccionIncompleta() && !conductorElegido()">
+              <span>Conductor</span>
+              <select name="conductor" [value]="conductorElegido()" (change)="alElegirConductor($event)">
+                <option value="">Seleccione el conductor</option>
+                @for (conductor of conductores(); track conductor.id) {
+                  <option [value]="conductor.id">{{ conductor.nombreCompleto }} · {{ conductor.cedula }}</option>
+                }
+              </select>
+              @if (seleccionIncompleta() && !conductorElegido()) {
+                <small class="field-error">Seleccione un conductor.</small>
+              }
+            </label>
+
+            <label class="dialog-field" [class.invalid]="seleccionIncompleta() && !vehiculoElegido()">
+              <span>Vehículo</span>
+              <select name="vehiculo" [value]="vehiculoElegido()" (change)="alElegirVehiculo($event)">
+                <option value="">Seleccione el vehículo</option>
+                @for (vehiculo of automotores(); track vehiculo.id) {
+                  <option [value]="vehiculo.id">{{ vehiculo.placa }} · {{ etiquetaTipo(vehiculo.tipo) }} {{ vehiculo.marca }}</option>
+                }
+              </select>
+              @if (seleccionIncompleta() && !vehiculoElegido()) {
+                <small class="field-error">Seleccione un vehículo.</small>
+              } @else {
+                <small class="field-hint">Solo se habilitan furgones, camiones y tractocamiones activos. El remolque se acopla al activar.</small>
+              }
+            </label>
+          </div>
+
+          @if (errorHabilitar()) {
+            <p class="form-error" role="alert">{{ errorHabilitar() }}</p>
+          }
+
+          <div class="dialog-actions">
+            <button class="cancel-button" type="button" [disabled]="habilitando()" (click)="cerrarHabilitar()">Cancelar</button>
+            <button class="save-button" type="submit" [disabled]="habilitando()">
+              {{ habilitando() ? 'Habilitando…' : puedeReintentar() ? 'Reintentar' : 'Habilitar vehículo' }}
+            </button>
+          </div>
+        </form>
+      }
+    </section>
+  </div>
+}
+
+@if (porActivar(); as asignacion) {
+  <div class="dialog-backdrop" (click)="cancelarActivacion()">
+    <section class="vehicle-dialog confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="activate-title" (click)="$event.stopPropagation()">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">ASIGNACIÓN DE VEHÍCULOS</p>
+          <h2 id="activate-title">Activar {{ asignacion.vehiculoPlaca }} para {{ asignacion.conductorNombre }}</h2>
+        </div>
+      </div>
+      <p class="confirm-text">
+        Será el vehículo con el que {{ asignacion.conductorNombre }} registre sus manifiestos.
+        Si ya tenía otro vehículo activo, volverá a "habilitado".
+      </p>
+
+      @if (admiteAcople(asignacion)) {
+        <label class="dialog-field">
+          <span>{{ asignacion.vehiculoTipo === 'CAMION' ? 'Remolque' : 'Semirremolque' }} acoplado</span>
+          @if (cargandoRemolques()) {
+            <small class="field-hint" role="status">Cargando…</small>
+          } @else {
+            <select name="remolque" [value]="remolqueElegido()" (change)="alElegirRemolque($event)">
+              <option value="">Sin {{ asignacion.vehiculoTipo === 'CAMION' ? 'remolque' : 'semirremolque' }}</option>
+              @for (remolque of remolquesDisponibles(); track remolque.id) {
+                <option [value]="remolque.id">{{ remolque.placa }} · {{ remolque.marca }} {{ remolque.modelo }}</option>
+              }
+            </select>
+            <small class="field-hint">
+              Un {{ asignacion.vehiculoTipo === 'CAMION' ? 'camión solo admite remolque' : 'tractocamión solo admite semirremolque' }}.
+            </small>
+          }
+        </label>
+      } @else {
+        <p class="field-hint">Un {{ etiquetaTipo(asignacion.vehiculoTipo).toLowerCase() }} no admite remolque ni semirremolque.</p>
+      }
+
+      @if (errorActivar()) {
+        <p class="form-error" role="alert">{{ errorActivar() }}</p>
+      }
+
+      <div class="dialog-actions">
+        <button class="cancel-button" type="button" [disabled]="activando()" (click)="cancelarActivacion()">Cancelar</button>
+        <button class="save-button" type="button" [disabled]="activando() || cargandoRemolques()" (click)="confirmarActivacion()">
+          {{ activando() ? 'Activando…' : 'Activar' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (porFinalizar(); as asignacion) {
+  <div class="dialog-backdrop" (click)="cancelarFinalizacion()">
+    <section class="vehicle-dialog confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="finish-title" aria-describedby="finish-description" (click)="$event.stopPropagation()">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">ASIGNACIÓN DE VEHÍCULOS</p>
+          <h2 id="finish-title">¿Finalizar la asignación de {{ asignacion.vehiculoPlaca }}?</h2>
+        </div>
+      </div>
+      <p id="finish-description" class="confirm-text">
+        {{ asignacion.conductorNombre }} ya no podrá manejar este vehículo. El registro se conserva en el historial con su fecha de fin.
+      </p>
+
+      @if (errorFinalizar()) {
+        <p class="form-error" role="alert">{{ errorFinalizar() }}</p>
+      }
+
+      <div class="dialog-actions">
+        <button class="cancel-button" type="button" [disabled]="finalizando()" (click)="cancelarFinalizacion()">Cancelar</button>
+        <button class="save-button danger-button" type="button" [disabled]="finalizando()" (click)="confirmarFinalizacion()">
+          {{ finalizando() ? 'Finalizando…' : 'Finalizar' }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+
+@if (historialDe(); as vehiculo) {
+  <div class="dialog-backdrop" (click)="cerrarHistorial()">
+    <section class="vehicle-dialog history-dialog" role="dialog" aria-modal="true" aria-labelledby="history-title" (click)="$event.stopPropagation()">
+      <div class="dialog-heading">
+        <div>
+          <p class="eyebrow">HISTORIAL DEL VEHÍCULO</p>
+          <h2 id="history-title">Conductores de {{ vehiculo.placa }}</h2>
+        </div>
+        <button class="dialog-close" type="button" aria-label="Cerrar historial" (click)="cerrarHistorial()">×</button>
+      </div>
+
+      @if (cargandoHistorial()) {
+        <p class="list-state dialog-state" role="status">Cargando historial…</p>
+      } @else if (errorHistorial()) {
+        <div class="list-state error dialog-state" role="alert">
+          <span>{{ errorHistorial() }}</span>
+          <button class="retry-button" type="button" (click)="cargarHistorial()">Reintentar</button>
+        </div>
+      } @else {
+        <div class="fleet-table-scroll">
+          <table class="fleet-table">
+            <thead>
+              <tr>
+                <th scope="col">Conductor</th>
+                <th scope="col">Como</th>
+                <th scope="col">Estado</th>
+                <th scope="col">Inicio</th>
+                <th scope="col">Fin</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (registro of historial(); track registro.id) {
+                <tr class="history-row">
+                  <td>{{ registro.conductorNombre }}</td>
+                  <td>{{ registro.rolEnAsignacion === 'VEHICULO' ? 'Vehículo' : 'Remolque acoplado' }}</td>
+                  <td>{{ etiquetaEstado(registro.estado) }}</td>
+                  <td>{{ registro.fechaAsignacion | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td>{{ registro.fechaFinalizacion ? (registro.fechaFinalizacion | date: 'dd/MM/yyyy HH:mm') : 'Vigente' }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td class="empty-row" colspan="5">Este vehículo aún no ha sido asignado a ningún conductor.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </div>
+}
