@@ -67,7 +67,7 @@ describe('Guards y navegación por rol', () => {
   });
 
   it.each([
-    ['ADMINISTRADOR', ['Dashboard', 'Viajes', 'Flota', 'Usuarios']],
+    ['ADMINISTRADOR', ['Dashboard', 'Viajes', 'Flota', 'Asignaciones', 'Usuarios']],
     ['CONDUCTOR', ['Mis viajes', 'Historial']],
     ['CONTADOR', ['Reportes']],
   ] as const)('el menú del %s muestra solo sus módulos', async (rol, esperado) => {

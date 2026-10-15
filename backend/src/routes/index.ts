@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { asignacionesRoutes, historialVehiculoRoutes, vehiculoActivoRoutes } from '../modules/asignaciones/asignaciones.routes';
 import { authRoutes } from '../modules/auth/auth.routes';
 import { vehiculosRoutes } from '../modules/vehiculos/vehiculos.routes';
 
@@ -16,3 +17,6 @@ apiRouter.get('/salud', (_req, res) => {
 // Registro de módulos (una línea por módulo):
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/vehiculos', vehiculosRoutes);
+apiRouter.use('/asignaciones', asignacionesRoutes);
+apiRouter.use('/vehiculos/:id/asignaciones', historialVehiculoRoutes);
+apiRouter.use('/conductores/me/vehiculo-activo', vehiculoActivoRoutes);
