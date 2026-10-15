@@ -4,6 +4,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { EMPTY, Observable, catchError, map, tap, timeout } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { borrarDatosGuardados } from '../../historial/historial-almacen';
 import { RUTA_INICIO_POR_ROL, type RespuestaLogin, type UsuarioSesion } from './auth.models';
 
 /** Motivo por el que se cerró la sesión; la pantalla de login muestra el aviso correspondiente. */
@@ -137,6 +138,8 @@ export class AuthService {
     clearTimeout(this.temporizadorExpiracion);
     borrar(CLAVE_TOKEN);
     borrar(CLAVE_USUARIO);
+    // HU-05: el historial guardado para consultar sin conexión no sobrevive a la sesión.
+    borrarDatosGuardados();
     this.tokenActual.set(null);
     this.usuarioActual.set(null);
   }

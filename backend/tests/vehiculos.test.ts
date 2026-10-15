@@ -25,7 +25,7 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  await pool.query('TRUNCATE solicitudes_idempotentes, asignaciones_vehiculo, vehiculos');
+  await pool.query('TRUNCATE solicitudes_idempotentes, asignaciones_vehiculo, gastos_ruta, manifiestos_carga, viajes, vehiculos');
 });
 
 afterEach(() => restablecerConsultaViajeActivo());
