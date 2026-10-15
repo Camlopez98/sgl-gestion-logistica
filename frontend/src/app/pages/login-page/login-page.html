@@ -1,0 +1,55 @@
+<main class="login">
+  <section class="login-card" aria-labelledby="login-title">
+    <div class="login-brand">
+      <span class="brand-mark" aria-hidden="true">L</span>
+      <span>LogiTrack</span>
+    </div>
+
+    <h1 id="login-title">Iniciar sesión</h1>
+    <p class="login-subtitle">Ingrese con su correo y contraseña para acceder a su módulo.</p>
+
+    @if (aviso() && !error()) {
+      <p class="login-alert info" role="status">{{ aviso() }}</p>
+    }
+    @if (error()) {
+      <p class="login-alert error" role="alert">{{ error() }}</p>
+    }
+
+    <form [formGroup]="formulario" (ngSubmit)="iniciarSesion()" novalidate>
+      <label class="field" [class.invalid]="campoInvalido('email')">
+        <span>Correo electrónico</span>
+        <input
+          type="email"
+          formControlName="email"
+          autocomplete="username"
+          placeholder="usuario@empresa.com"
+          [attr.aria-invalid]="campoInvalido('email')"
+          aria-describedby="email-error"
+        />
+        @if (campoInvalido('email')) {
+          <small id="email-error" class="field-error">
+            {{ formulario.controls.email.hasError('required') ? 'El correo es obligatorio.' : 'Ingrese un correo con formato válido.' }}
+          </small>
+        }
+      </label>
+
+      <label class="field" [class.invalid]="campoInvalido('password')">
+        <span>Contraseña</span>
+        <input
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+          [attr.aria-invalid]="campoInvalido('password')"
+          aria-describedby="password-error"
+        />
+        @if (campoInvalido('password')) {
+          <small id="password-error" class="field-error">La contraseña es obligatoria.</small>
+        }
+      </label>
+
+      <button class="login-button" type="submit" [disabled]="enviando()">
+        {{ enviando() ? 'Ingresando…' : puedeReintentar() ? 'Reintentar' : 'Iniciar sesión' }}
+      </button>
+    </form>
+  </section>
+</main>

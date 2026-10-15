@@ -1,72 +1,185 @@
 <section class="page-heading" aria-labelledby="history-title">
-  <div>
-    <p class="eyebrow">CONSULTAS</p>
-    <h1 id="history-title">Historial de Viajes</h1>
-    <p class="page-description">Consulta el registro de todos tus viajes realizados.</p>
-  </div>
+  <p class="eyebrow">CONSULTAS</p>
+  <h1 id="history-title">Historial de viajes</h1>
+  <p class="page-description">Los viajes que usted registró. Solo puede consultarlos.</p>
 </section>
 
-<section class="history-filters" aria-label="Filtros del historial">
-  <label class="filter-field search-field">
-    <span>Buscar</span>
-    <input type="search" placeholder="Buscar por origen, destino o placa..." (input)="onSearchInput($event)" />
-  </label>
-  <label class="filter-field">
+@if (datosGuardadosDe(); as guardadoDe) {
+  <div class="notice stale-notice" role="status">
+    <p>
+      <strong>Está viendo datos guardados en este dispositivo.</strong>
+      Pueden no estar actualizados. Última actualización: {{ formatearFechaHora(guardadoDe) }}
+    </p>
+    <button class="secondary-button" type="button" (click)="cargarDesdeElInicio()">Actualizar</button>
+  </div>
+}
+
+<form class="filters" aria-label="Filtros del historial" (submit)="$event.preventDefault(); aplicarFiltros()" novalidate>
+  <label class="field">
     <span>Estado</span>
-    <select (change)="onStatusChange($event)">
-      <option>Todos</option>
-      <option>Entregado</option>
-      <option>En revisión</option>
+    <select name="estado" [value]="filtroEstado()" (change)="alCambiarEstado($event)">
+      <option value="">Todos</option>
+      @for (estado of estados; track estado.valor) {
+        <option [value]="estado.valor" [selected]="filtroEstado() === estado.valor">{{ estado.etiqueta }}</option>
+      }
     </select>
   </label>
-  <label class="filter-field">
-    <span>Fecha</span>
-    <input type="date" aria-label="Filtrar por fecha" (change)="onDateChange($event)" />
+  <label class="field">
+    <span>Desde</span>
+    <input type="date" name="desde" [value]="filtroDesde()" (input)="alCambiarFecha('desde', $event)" />
   </label>
-</section>
+  <label class="field">
+    <span>Hasta</span>
+    <input type="date" name="hasta" [value]="filtroHasta()" (input)="alCambiarFecha('hasta', $event)" />
+  </label>
+  <div class="filter-actions">
+    <button class="primary-button" type="submit">Aplicar filtros</button>
+    @if (filtroEnFormulario()) {
+      <button class="secondary-button" type="button" (click)="limpiarFiltros()">Limpiar</button>
+    }
+  </div>
+  @if (errorFiltros()) {
+    <p class="field-error" role="alert">{{ errorFiltros() }}</p>
+  }
+</form>
 
-<section class="history-summary" aria-label="Resumen del historial">
-  @for (summary of summaries; track summary.title) {
-    <app-card [title]="summary.title" [value]="summary.value" [detail]="summary.detail" />
+<section class="trips" aria-label="Viajes registrados" aria-live="polite">
+  @if (cargando()) {
+    <p class="list-state" role="status">Cargando historial…</p>
+  } @else if (sinDatosSinConexion()) {
+    <div class="list-state" role="alert">
+      <p>{{ mensajeSinDatos }}</p>
+      <button class="secondary-button" type="button" (click)="cargarDesdeElInicio()">Reintentar</button>
+    </div>
+  } @else if (error()) {
+    <div class="list-state error" role="alert">
+      <p>{{ error() }}</p>
+      <button class="secondary-button" type="button" (click)="cargarDesdeElInicio()">Reintentar</button>
+    </div>
+  } @else if (viajes().length === 0) {
+    <p class="list-state">
+      @if (hayFiltros()) {
+        No hay viajes que cumplan los filtros aplicados.
+      } @else {
+        Todavía no tiene viajes registrados.
+      }
+    </p>
+  } @else {
+    <p class="result-count">Mostrando {{ viajes().length }} de {{ total() }} viajes</p>
+    <ul class="trip-list">
+      @for (viaje of viajes(); track viaje.id) {
+        <li>
+          <button class="trip-card" type="button" (click)="abrirDetalle(viaje)">
+            <span class="trip-top">
+              <span class="trip-date">{{ formatearFecha(viaje.fechaInicio) }}</span>
+              <app-badge [label]="etiquetaEstado(viaje.estado)" [variant]="varianteDeEstado(viaje.estado)" />
+            </span>
+            <span class="trip-route">{{ viaje.origen }} → {{ viaje.destino }}</span>
+            <span class="trip-meta">
+              <span>Flete <strong>{{ formatearMoneda(viaje.valorFlete) }}</strong></span>
+              <span>Placa <strong>{{ viaje.placaVehiculo }}</strong></span>
+            </span>
+          </button>
+        </li>
+      }
+    </ul>
+
+    @if (errorVerMas()) {
+      <div class="list-state error more-error" role="alert">
+        <p>{{ errorVerMas() }}</p>
+        <button class="secondary-button" type="button" (click)="verMas()">Reintentar</button>
+      </div>
+    } @else if (hayMas()) {
+      <button class="more-button" type="button" [disabled]="cargandoMas()" (click)="verMas()">
+        {{ cargandoMas() ? 'Cargando…' : 'Ver más' }}
+      </button>
+    }
   }
 </section>
 
-<section class="history-table-panel" aria-label="Viajes realizados">
-  <div class="history-table-scroll">
-    <table class="history-table">
-      <thead>
-        <tr>
-          <th scope="col">Fecha</th>
-          <th scope="col">Origen</th>
-          <th scope="col">Destino</th>
-          <th scope="col">Placa</th>
-          <th scope="col">Gasto Total</th>
-          <th scope="col">Estado</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (record of pagedRecords(); track $index) {
-          <tr>
-            <td>{{ record.date }}</td>
-            <td>{{ record.origin }}</td>
-            <td>{{ record.destination }}</td>
-            <td class="plate-cell">{{ record.plate }}</td>
-            <td class="expense-cell">{{ record.expense }}</td>
-            <td><app-badge [label]="record.status" [variant]="record.status === 'Entregado' ? 'completed' : 'review'" /></td>
-          </tr>
-        } @empty {
-          <tr><td class="empty-row" colspan="6">No hay viajes que coincidan con estos filtros.</td></tr>
-        }
-      </tbody>
-    </table>
-  </div>
+@if (viajeAbierto(); as abierto) {
+  <div class="sheet-backdrop" (click)="cerrarDetalle()">
+    <section
+      class="sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="detail-title"
+      tabindex="-1"
+      (click)="$event.stopPropagation()"
+      (keydown.escape)="cerrarDetalle()"
+    >
+      <header class="sheet-heading">
+        <div>
+          <p class="eyebrow">DETALLE DEL VIAJE</p>
+          <h2 id="detail-title">{{ abierto.origen }} → {{ abierto.destino }}</h2>
+        </div>
+        <button class="close-button" type="button" aria-label="Cerrar detalle" (click)="cerrarDetalle()">×</button>
+      </header>
 
-  <footer class="history-pagination">
-    <span>Mostrando {{ firstVisible() }}-{{ lastVisible() }} de {{ filteredRecords().length }} resultados de muestra</span>
-    <div class="pagination-controls" aria-label="Paginación del historial">
-      <button type="button" aria-label="Página anterior" [disabled]="currentPage() === 1" (click)="changePage(currentPage() - 1)">‹</button>
-      <span>Página {{ currentPage() }} de {{ pageCount() }}</span>
-      <button type="button" aria-label="Página siguiente" [disabled]="currentPage() >= pageCount()" (click)="changePage(currentPage() + 1)">›</button>
-    </div>
-  </footer>
-</section>
+      @if (detalleCargando()) {
+        <p class="list-state" role="status">Cargando detalle…</p>
+      } @else if (detalleError()) {
+        <div class="list-state error" role="alert">
+          <p>{{ detalleError() }}</p>
+          <button class="secondary-button" type="button" (click)="cargarDetalle()">Reintentar</button>
+        </div>
+      } @else if (detalle(); as viaje) {
+        @if (detalleGuardadoDe(); as guardadoDe) {
+          <p class="notice stale-notice" role="status">
+            Datos guardados en este dispositivo; pueden no estar actualizados. Última actualización:
+            {{ formatearFechaHora(guardadoDe) }}
+          </p>
+        }
+
+        <dl class="detail-grid">
+          <div><dt>Estado</dt><dd><app-badge [label]="etiquetaEstado(viaje.estado)" [variant]="varianteDeEstado(viaje.estado)" /></dd></div>
+          <div><dt>Valor del flete</dt><dd>{{ formatearMoneda(viaje.valorFlete) }}</dd></div>
+          <div><dt>Origen</dt><dd>{{ viaje.origen }}</dd></div>
+          <div><dt>Destino</dt><dd>{{ viaje.destino }}</dd></div>
+          <div><dt>Inicio</dt><dd>{{ formatearFechaHora(viaje.fechaInicio) }}</dd></div>
+          <div>
+            <dt>Entrega</dt>
+            <dd>{{ viaje.fechaEntrega ? formatearFechaHora(viaje.fechaEntrega) : 'Aún sin entregar' }}</dd>
+          </div>
+          <div><dt>Vehículo</dt><dd>{{ viaje.placaVehiculo }}</dd></div>
+          @if (viaje.placaRemolque) {
+            <div><dt>Remolque</dt><dd>{{ viaje.placaRemolque }}</dd></div>
+          }
+        </dl>
+
+        <h3>Manifiesto de carga</h3>
+        @if (viaje.manifiesto; as manifiesto) {
+          <p class="manifest-number">Manifiesto {{ manifiesto.numeroManifiesto }}</p>
+          @if (fotoNoDisponible()) {
+            <p class="muted" role="status">La foto del manifiesto no está disponible en este momento.</p>
+          } @else {
+            <img
+              class="manifest-photo"
+              [src]="manifiesto.urlImagen"
+              [alt]="'Foto del manifiesto ' + manifiesto.numeroManifiesto"
+              loading="lazy"
+              (error)="fotoNoDisponible.set(true)"
+            />
+          }
+        } @else {
+          <p class="muted">Este viaje todavía no tiene manifiesto registrado.</p>
+        }
+
+        <h3>Gastos de ruta</h3>
+        @if (viaje.gastos.length === 0) {
+          <p class="muted">Este viaje no tiene gastos de ruta registrados.</p>
+        } @else {
+          <ul class="expense-list">
+            @for (gasto of viaje.gastos; track gasto.id) {
+              <li>
+                <span><strong>{{ gasto.tipo }}</strong> · {{ gasto.concepto }}</span>
+                <span class="expense-amount">{{ formatearMoneda(gasto.monto) }}</span>
+              </li>
+            }
+          </ul>
+          <p class="expense-total">Total de gastos <strong>{{ formatearMoneda(viaje.totalGastos) }}</strong></p>
+        }
+      }
+    </section>
+  </div>
+}

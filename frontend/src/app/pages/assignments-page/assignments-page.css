@@ -1,0 +1,20 @@
+/* Los estilos base (tabla, filtros, diálogos) se comparten con la pantalla de flota. */
+.history-dialog {
+  width: min(100%, 720px);
+}
+
+.dialog-state {
+  margin: 0 0 12px;
+}
+
+.warning-message {
+  border-color: #ecd9a5;
+  color: #7a5a12;
+  background: #fffaf0;
+}
+
+.dialog-field + .field-hint,
+.confirm-dialog .field-hint {
+  display: block;
+  margin: 0 0 14px;
+}

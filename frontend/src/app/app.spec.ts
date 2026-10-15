@@ -1,51 +1,51 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 import { App } from './app';
+import { routes } from './app.routes';
+import type { Rol } from './core/auth/auth.models';
+import { iniciarSesionDePrueba } from './testing/sesion-prueba';
 
 describe('App', () => {
   beforeEach(async () => {
+    sessionStorage.clear();
     await TestBed.configureTestingModule({
       imports: [App],
+      providers: [provideRouter(routes), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
   });
 
   it('should create the app', () => {
     const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+    expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it('should render title', async () => {
-    const fixture = TestBed.createComponent(App);
-    await fixture.whenStable();
-    const compiled = fixture.nativeElement as HTMLElement;
+  it('should render the trips page', async () => {
+    iniciarSesionDePrueba('ADMINISTRADOR');
+    const harness = await RouterTestingHarness.create('/admin/viajes');
+    const compiled = harness.routeNativeElement!.closest('app-shell') as HTMLElement;
+
     expect(compiled.querySelector('h1')?.textContent).toContain('Gestión de Viajes');
     expect(compiled.querySelectorAll('app-card').length).toBe(4);
     expect(compiled.querySelectorAll('.trip-row').length).toBe(5);
+    expect(compiled.querySelector('.breadcrumb')?.textContent).toContain('Viajes');
   });
 
-  it('should open the dashboard and history tabs', async () => {
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
+  it.each<[string, Rol, string, string]>([
+    ['/admin/dashboard', 'ADMINISTRADOR', 'app-dashboard-page', 'Ingresos Mensuales'],
+    ['/admin/flota', 'ADMINISTRADOR', 'app-fleet-page', 'Gestión de Flota'],
+    ['/admin/usuarios', 'ADMINISTRADOR', 'app-users-page', 'Gestión de Conductores'],
+    ['/conductor/historial', 'CONDUCTOR', 'app-history-page', 'Historial de Viajes'],
+    ['/conductor/viajes-en-curso', 'CONDUCTOR', 'app-driver-trips-page', 'Mis viajes en curso'],
+    ['/contador/reportes', 'CONTADOR', 'app-reports-page', 'Visor de reportes'],
+  ])('should open %s for %s', async (url, rol, selector, texto) => {
+    iniciarSesionDePrueba(rol);
+    const harness = await RouterTestingHarness.create(url);
+    const compiled = harness.routeNativeElement!.closest('app-shell') as HTMLElement;
 
-    compiled.querySelectorAll<HTMLButtonElement>('.nav-link')[0].click();
-    fixture.detectChanges();
-    expect(compiled.querySelector('app-dashboard-page')).toBeTruthy();
-    expect(compiled.textContent).toContain('Ingresos Mensuales');
-
-    compiled.querySelectorAll<HTMLButtonElement>('.nav-link')[2].click();
-    fixture.detectChanges();
-    expect(compiled.querySelector('app-history-page')).toBeTruthy();
-    expect(compiled.textContent).toContain('Historial de Viajes');
-
-    compiled.querySelectorAll<HTMLButtonElement>('.nav-link')[3].click();
-    fixture.detectChanges();
-    expect(compiled.querySelector('app-fleet-page')).toBeTruthy();
-    expect(compiled.textContent).toContain('Gestión de Flota');
-
-    compiled.querySelectorAll<HTMLButtonElement>('.nav-link')[4].click();
-    fixture.detectChanges();
-    expect(compiled.querySelector('app-users-page')).toBeTruthy();
-    expect(compiled.textContent).toContain('Gestión de Conductores');
+    expect(compiled.querySelector(selector)).toBeTruthy();
+    expect(compiled.textContent).toContain(texto);
   });
 });
